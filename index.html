@@ -274,6 +274,8 @@ function aFecha(v){
   return null;
 }
 function lunesDe(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return iso(x); }
+var MES_CORTO = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function diaMes(isoStr){ var p = isoStr.split('-'); return (+p[2]) + ' ' + MES_CORTO[+p[1] - 1]; }
 function sumarDias(isoStr, n){ var p = isoStr.split('-'); var d = new Date(+p[0], +p[1] - 1, +p[2] + n); return iso(d); }
 
 function sucursalDeArchivo(nombre){
@@ -436,6 +438,12 @@ function calcular(datos){
       s.anterior = caja === null ? (h.anterior || 0) : caja;
       // La clave no usa la fila: si la sucursal mete renglones, el mismo problema sigue siendo el mismo.
       function prob(o, clave){ o.lunes = h.lunes; o.hoja = h.nombre; o.sucursal = suc; o.clave = [suc, h.lunes, clave].join('|'); res.problemas.push(o); }
+      // Fechas mal escritas: el renglón dice una fecha que no es de la semana de su pestaña.
+      var finSem = sumarDias(h.lunes, 6);
+      function revisarFecha(r, desc){
+        if (!r.fecha || (r.fecha >= h.lunes && r.fecha <= finSem)) return;
+        prob({texto:'Fecha ' + diaMes(r.fecha) + ' fuera de la semana', detalle:desc, fila:r.fila, monto:r.monto}, ['fecha', r.fecha, r.monto, norm(desc)].join('|'));
+      }
       if (idx > 0 && totalPrev !== null && h.anterior !== null && Math.abs(h.anterior - totalPrev) >= 1)
         prob({texto:'El saldo anterior no coincide con el Total Reporte de la semana pasada', monto:h.anterior - totalPrev}, 'cadena');
       h.cobros.forEach(function(c){
@@ -445,6 +453,7 @@ function calcular(datos){
         if (k.tipo === 'inventario' || k.tipo === 'cancelada'){ s.apartados.push(o); return; }
         s.hayDatos = true;
         s.cobros.push(o);
+        revisarFecha(c, c.producto || c.categoria);
         var m = k.metodo.valor || 'SIN';
         s.porMetodo[m] = (s.porMetodo[m] || 0) + c.monto;
         if (k.metodo.valor === 'EFECTIVO' || k.metodo.valor === 'PRESTAMO') s.efectivo += c.monto;
@@ -460,6 +469,7 @@ function calcular(datos){
         var t = k.valor || 'SIN';
         s.hayDatos = true;
         s.egresos.push(Object.assign({}, e, {tipoN:t}));
+        revisarFecha(e, e.descripcion);
         s.salidas[t] = (s.salidas[t] || 0) + e.monto;
         s.totalSalidas += e.monto;
         if (k.corregido) prob({texto:textoCorregido('Egreso', k), detalle:'El Excel no lo resta; aquí cuenta como ' + NOMBRE_EGRESO[k.valor], fila:e.fila, monto:e.monto}, ['egreso', k.original, e.monto, norm(e.descripcion)].join('|'));

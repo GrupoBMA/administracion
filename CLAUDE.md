@@ -30,9 +30,10 @@ Solo estructura: `index.html` con encabezado, selector de empresa (Todas + las c
 
 ## Repositorio y despliegue
 
-- Vive en la carpeta `grupo-bma/` del repo `Golden-Valley-Farms/Finanzas`, el mismo de GVF. Se publica por GitHub Pages desde `main` en <https://golden-valley-farms.github.io/Finanzas/grupo-bma/>. **Cada push a `main` sale en vivo** y el repo es **público**.
-- **Clon local propio:** `OneDrive\Claude Code\Grupo BMA` es un clon *sparse* del repo que solo trae `grupo-bma/` (`git sparse-checkout set --no-cone '/grupo-bma/'`). Así no se descarga la app de GVF ni se carga su CLAUDE.md (128 KB) al trabajar aquí. Abrir las sesiones de Claude en `Grupo BMA\grupo-bma`.
-- **No tocar archivos fuera de `grupo-bma/`**: la raíz del repo es la app de GVF en producción.
+- Repo propio **`GrupoBMA/administracion`** dentro de la organización de GitHub `GrupoBMA` (3-nov-2026), separado de GVF. Se publica por GitHub Pages desde `main` en <https://grupobma.github.io/administracion/>. **Cada push a `main` sale en vivo** y el repo es **público** (requisito de Pages en el plan gratis).
+- Otras apps del grupo irían en repos hermanos de la misma organización (p. ej. `logistica` → `grupobma.github.io/logistica/`). El nombre especial `grupobma.github.io` queda libre para una posible página de inicio.
+- Clon local: `OneDrive\Claude Code\Grupo BMA\grupo-bma`. Abrir las sesiones de Claude ahí.
+- Antes vivía en la carpeta `grupo-bma/` del repo `Golden-Valley-Farms/Finanzas` (GVF); el historial se trajo con `git subtree split`.
 - Flujo igual que GVF: editar, commit descriptivo, `git push origin main`, y decirle al usuario dónde mirar en la página en vivo.
 
 ## Datos y seguridad (pendiente)

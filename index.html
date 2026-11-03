@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&amp;family=DM+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
@@ -126,7 +127,12 @@ td.der,th.der{text-align:right}
 .inicio{max-width:440px;margin:12vh auto 0;text-align:center}
 .inicio h2{margin-bottom:10px}
 .inicio p{color:var(--text2);font-size:14px;line-height:1.5;margin-bottom:22px}
-.error{color:var(--alerta);font-size:13px;margin-top:14px}
+.conectar{display:flex;flex-direction:column;gap:10px}
+.conectar input{font-family:var(--font);font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px;transition:border-color .15s}
+.conectar input::placeholder{color:var(--text2)}
+.conectar input:focus{outline:none;border-color:var(--text)}
+.error{color:var(--alerta);font-size:13px;margin-top:14px;line-height:1.5}
+.aviso{margin:0 0 16px;padding:10px 14px;background:var(--alerta-bg);border-radius:var(--radius)}
 
 @media(max-width:640px){
   .detalle{grid-template-columns:1fr;gap:18px}
@@ -147,7 +153,7 @@ td.der,th.der{text-align:right}
       <span class="lbl" id="sem-lbl"></span>
       <button class="icono" id="sem-sig" onclick="moverSemana(1)" aria-label="Semana siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
     </div>
-    <button class="btn" id="btn-actualizar" onclick="escogerArchivos()" hidden>Actualizar</button>
+    <button class="btn" id="btn-actualizar" onclick="actualizar()" hidden>Actualizar</button>
     <input type="file" id="archivos" accept=".xlsx" multiple hidden onchange="leerArchivos(this.files)">
   </div>
 </header>
@@ -160,11 +166,16 @@ td.der,th.der{text-align:right}
 </nav>
 
 <main>
+  <div class="error aviso" id="aviso" role="status" hidden></div>
   <section class="inicio" id="inicio">
-    <h2>Carga los reportes de las sucursales</h2>
-    <p>Escoge los Excel de la carpeta del Drive. Se leen en esta computadora y no se modifican.</p>
-    <button class="btn primario" id="btn-escoger" onclick="escogerArchivos()">Escoger archivos</button>
-    <div class="error" id="error-inicio" hidden></div>
+    <h2>Conecta los reportes de las sucursales</h2>
+    <p>Se leen de la carpeta del Drive con permiso solo de lectura.</p>
+    <form class="conectar" onsubmit="conectarDrive(event)">
+      <input id="carpeta" type="text" placeholder="Enlace de la carpeta" autocomplete="off" spellcheck="false" aria-label="Enlace de la carpeta del Drive">
+      <button class="btn primario" id="btn-conectar" type="submit">Conectar con Google</button>
+    </form>
+    <button class="mas" onclick="escogerArchivos()">O escoge los archivos de tu computadora</button>
+    <div class="error" id="error-inicio" role="status" hidden></div>
   </section>
   <section class="modulo" id="mod-caja"></section>
   <section class="modulo" id="mod-cobros"></section>
@@ -183,8 +194,12 @@ var LIMITE_GRAVE = 30000;      // desde aqui la alerta se marca mas fuerte
 
 var SUCURSALES = {
   AGS:'Aguascalientes', GDL:'Guadalajara', MAZ:'Mazatlán', PUE:'Puebla',
-  QRO:'Querétaro', TEP:'Tepic', MOR:'MOR', ZAP:'Zapopan'
+  QRO:'Querétaro', TEP:'Tepic', MOR:'Morelia', ZAP:'Zapopan'
 };
+// Para reconocer la sucursal cuando el nombre del archivo no la trae (p. ej. "Reporte 2026" de Morelia).
+var CIUDADES = {AGUASCALIENTES:'AGS', GUADALAJARA:'GDL', MAZATLAN:'MAZ', PUEBLA:'PUE', QUERETARO:'QRO',
+  TEPIC:'TEP', MORELIA:'MOR', ZAPOPAN:'ZAP'};
+var CLAVES_HOJA = {AGS:'AGS', MAZ:'MAZ', PUE:'PUE', QRO:'QRO', TEP:'TEP', ZAP:'ZAP', MLM:'MOR', MOR:'MOR', GDL:'GDL'};
 
 // Catalogo de empresas. Por ahora todo se maneja como un solo negocio.
 var EMPRESAS = [
@@ -267,8 +282,23 @@ function lunesDe(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()
 function sumarDias(isoStr, n){ var p = isoStr.split('-'); var d = new Date(+p[0], +p[1] - 1, +p[2] + n); return iso(d); }
 
 function sucursalDeArchivo(nombre){
-  var m = norm(nombre).match(/\b(AGS|GDL|MAZ|MOR|PUE|QRO|TEP|ZAP)\b/) || norm(nombre).match(/(AGS|GDL|MAZ|MOR|PUE|QRO|TEP|ZAP)/);
-  return m ? m[1] : null;
+  var n = norm(nombre);
+  var m = n.match(/\b(AGS|GDL|MAZ|MOR|PUE|QRO|TEP|ZAP)\b/) || n.match(/(AGS|GDL|MAZ|MOR|PUE|QRO|TEP|ZAP)/);
+  if (m) return m[1];
+  for (var c in CIUDADES) if (n.indexOf(c) >= 0) return CIUDADES[c];
+  return null;
+}
+// Si el nombre del archivo no dice la sucursal: la clave mas repetida al inicio de las pestañas
+// ("PUE 44", "MLM 42") o la ciudad escrita en las primeras filas ("MORELIA SEMANA 64…").
+function sucursalDeContenido(nombresHojas, textos){
+  var cuenta = {}, mejor = null;
+  nombresHojas.forEach(function(h){
+    var m = norm(h).match(/^([A-Z]{3})\b/);
+    if (m && CLAVES_HOJA[m[1]]) cuenta[CLAVES_HOJA[m[1]]] = (cuenta[CLAVES_HOJA[m[1]]] || 0) + 1;
+  });
+  textos.forEach(function(t){ var n = norm(t); for (var c in CIUDADES) if (n.indexOf(c) >= 0) cuenta[CIUDADES[c]] = (cuenta[CIUDADES[c]] || 0) + 2; });
+  Object.keys(cuenta).forEach(function(s){ if (!mejor || cuenta[s] > cuenta[mejor]) mejor = s; });
+  return mejor;
 }
 
 // Lee una pestaña ya convertida en filas (arreglo de arreglos).
@@ -355,17 +385,19 @@ function leerHoja(nombre, filas){
 // Lee un archivo completo. Solo revisa las ultimas pestañas, que son las semanas recientes.
 function leerLibro(nombreArchivo, datos){
   var suc = sucursalDeArchivo(nombreArchivo);
-  if (!suc) return {archivo:nombreArchivo, error:'No reconozco la sucursal en el nombre del archivo'};
   var nombres = XLSX.read(datos, {type:'array', bookSheets:true}).SheetNames
     .filter(function(n){ return !/^\s*(hoja|copia)/i.test(n); });
   var candidatas = nombres.slice(-12);
   var libro = XLSX.read(datos, {type:'array', cellDates:true, sheets:candidatas, sheetRows:400});
-  var hojas = [];
+  var hojas = [], textos = [];
   candidatas.forEach(function(n){
     var filas = XLSX.utils.sheet_to_json(libro.Sheets[n], {header:1, raw:true, defval:null});
+    filas.slice(0, 3).forEach(function(r){ (r || []).forEach(function(v){ if (typeof v === 'string') textos.push(v); }); });
     var h = leerHoja(n, filas);
     if (h) hojas.push(h);
   });
+  suc = suc || sucursalDeContenido(nombres, textos);
+  if (!suc) return {archivo:nombreArchivo, error:'No reconocí la sucursal'};
   // Pestañas sin fechas (o con fechas viejas copiadas) van una semana despues de la anterior.
   for (var i = 0; i < hojas.length; i++){
     var prev = i > 0 ? hojas[i-1].lunes : null;
@@ -486,41 +518,124 @@ function cargarGuardado(){
   return null;
 }
 
-function escogerArchivos(){ document.getElementById('archivos').click(); }
+// --- Google Drive ---
+// Permiso SOLO de lectura: Google no deja que la app cambie, mueva ni borre nada del Drive.
+// Ademas la app solo hace peticiones GET. El enlace de la carpeta no va en el codigo (repo publico):
+// se guarda en esta computadora.
+var GOOGLE_CLIENT_ID = '580029556888-pg3prpg2e3cnlqsv6tok69pej6e8n7cq.apps.googleusercontent.com';
+var ALCANCE_DRIVE = 'https://www.googleapis.com/auth/drive.readonly';
+var CLAVE_CARPETA = 'bma.carpeta.v1';
+var XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+var token = null, tokenVence = 0, clienteToken = null;
 
+function idCarpeta(txt){
+  var t = (txt || '').trim();
+  var m = t.match(/folders\/([\w-]{10,})/) || t.match(/[?&]id=([\w-]{10,})/) || t.match(/^([\w-]{20,})$/);
+  return m ? m[1] : null;
+}
+function carpetaGuardada(){ try { return localStorage.getItem(CLAVE_CARPETA); } catch(e){ return null; } }
+
+// Se llama directo desde un clic para que el navegador deje abrir la ventana de Google.
+function pedirToken(){
+  return new Promise(function(ok, mal){
+    if (token && Date.now() < tokenVence - 60000) return ok(token);
+    if (!window.google || !google.accounts || !google.accounts.oauth2) return mal(new Error('No cargó Google. Revisa la conexión y vuelve a intentar.'));
+    if (!clienteToken) clienteToken = google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID, scope:ALCANCE_DRIVE, callback:function(){}});
+    clienteToken.callback = function(r){
+      if (r.error) return mal(new Error('No se dio permiso para leer el Drive.'));
+      token = r.access_token; tokenVence = Date.now() + (r.expires_in || 3600) * 1000; ok(token);
+    };
+    clienteToken.error_callback = function(){ mal(new Error('Se cerró la ventana de Google antes de dar permiso.')); };
+    clienteToken.requestAccessToken();
+  });
+}
+function drive(ruta, comoBytes){
+  return fetch('https://www.googleapis.com/drive/v3/' + ruta, {headers:{Authorization:'Bearer ' + token}}).then(function(r){
+    if (r.status === 401){ token = null; throw new Error('La sesión de Google venció. Dale Actualizar otra vez.'); }
+    if (r.status === 403 || r.status === 404) throw new Error('Esta cuenta no tiene acceso a la carpeta, o el enlace no es el correcto.');
+    if (!r.ok) throw new Error('Google respondió con un error (' + r.status + ').');
+    return comoBytes ? r.arrayBuffer() : r.json();
+  });
+}
+// Los Google Sheets se piden exportados como .xlsx; los Excel subidos tal cual.
+function archivosDeCarpeta(id){
+  var q = "'" + id + "' in parents and trashed=false and (mimeType='application/vnd.google-apps.spreadsheet' or mimeType='" + XLSX_MIME + "')";
+  return drive('files?q=' + encodeURIComponent(q) + '&fields=files(id,name,mimeType)&pageSize=200&supportsAllDrives=true&includeItemsFromAllDrives=true')
+    .then(function(r){
+      return (r.files || []).filter(function(f){ return norm(f.name).indexOf('REPORTE') >= 0; }).map(function(f){
+        return {nombre:f.name, bytes:function(){
+          return f.mimeType === XLSX_MIME ? drive('files/' + f.id + '?alt=media&supportsAllDrives=true', true)
+            : drive('files/' + f.id + '/export?mimeType=' + encodeURIComponent(XLSX_MIME), true);
+        }};
+      });
+    });
+}
+function desdeDrive(id){
+  ocupado(true, 'Conectando…');
+  pedirToken().then(function(){ return archivosDeCarpeta(id); }).then(function(fuentes){
+    try { localStorage.setItem(CLAVE_CARPETA, id); } catch(e){}
+    if (!fuentes.length) throw new Error('No encontré reportes en esa carpeta.');
+    procesar(fuentes);
+  }).catch(function(e){ ocupado(false); avisar(e.message); });
+}
+function conectarDrive(ev){
+  ev.preventDefault();
+  var id = idCarpeta(document.getElementById('carpeta').value);
+  if (!id) return avisar('Ese enlace no parece de una carpeta del Drive.');
+  desdeDrive(id);
+}
+function actualizar(){
+  var id = carpetaGuardada();
+  if (id) desdeDrive(id); else escogerArchivos();
+}
+
+function escogerArchivos(){ document.getElementById('archivos').click(); }
 function leerArchivos(lista){
   var archivos = Array.prototype.slice.call(lista || []);
-  if (!archivos.length) return;
-  var botones = [document.getElementById('btn-escoger'), document.getElementById('btn-actualizar')];
-  var textos = botones.map(function(b){ return b.textContent; });
-  var err = document.getElementById('error-inicio');
-  err.hidden = true;
+  document.getElementById('archivos').value = '';
+  if (archivos.length) procesar(archivos.map(function(f){ return {nombre:f.name, bytes:function(){ return f.arrayBuffer(); }}; }));
+}
+
+var BOTONES = ['btn-conectar', 'btn-actualizar'], textosBoton = {};
+function ocupado(si, txt){
+  BOTONES.forEach(function(id){
+    var b = document.getElementById(id);
+    if (!(id in textosBoton)) textosBoton[id] = b.textContent;
+    b.disabled = si; b.textContent = si ? txt : textosBoton[id];
+  });
+}
+function avisar(msg){
+  ['error-inicio', 'aviso'].forEach(function(id){ var e = document.getElementById(id); e.textContent = msg || ''; e.hidden = !msg; });
+}
+
+// Lee una lista de {nombre, bytes()} uno por uno y junta lo que encuentre.
+function procesar(fuentes){
+  avisar('');
   var nuevos = {leido:new Date().toISOString(), sucursales:{}};
-  var omitidos = [];
-  botones.forEach(function(b){ b.disabled = true; });
+  var sinSucursal = [], fallidos = [];
   var i = 0;
   function siguiente(){
-    if (i >= archivos.length) return terminar();
-    var f = archivos[i++];
-    var suc = sucursalDeArchivo(f.name);
-    botones.forEach(function(b){ b.textContent = 'Leyendo ' + (SUCURSALES[suc] || f.name) + '…'; });
-    f.arrayBuffer().then(function(buf){
-      setTimeout(function(){
+    if (i >= fuentes.length) return terminar();
+    var f = fuentes[i++];
+    ocupado(true, 'Leyendo ' + i + ' de ' + fuentes.length + '…');
+    f.bytes().then(function(buf){
+      return new Promise(function(ok){ setTimeout(function(){
         try {
-          var r = leerLibro(f.name, new Uint8Array(buf));
-          if (r.error || !r.hojas.length) omitidos.push(f.name);
-          else nuevos.sucursales[r.sucursal] = {archivo:r.archivo, hojas:r.hojas};
-        } catch(e){ omitidos.push(f.name); }
-        siguiente();
-      }, 20);
-    });
+          var r = leerLibro(f.nombre, new Uint8Array(buf));
+          if (r.error) sinSucursal.push(f.nombre);
+          else if (r.hojas.length) nuevos.sucursales[r.sucursal] = {archivo:r.archivo, hojas:r.hojas};
+        } catch(e){ fallidos.push(f.nombre); }
+        ok();
+      }, 20); });
+    }, function(e){ fallidos.push(f.nombre + (e && e.message ? ' (' + e.message + ')' : '')); }).then(siguiente);
   }
   function terminar(){
-    botones.forEach(function(b, k){ b.disabled = false; b.textContent = textos[k]; });
-    document.getElementById('archivos').value = '';
+    ocupado(false);
+    var avisos = [];
+    if (sinSucursal.length) avisos.push('No reconocí la sucursal de «' + sinSucursal.join('», «') + '».');
+    if (fallidos.length) avisos.push('No pude leer «' + fallidos.join('», «') + '».');
     if (!Object.keys(nuevos.sucursales).length){
-      err.textContent = 'No encontré semanas desde el 5 de octubre en esos archivos.';
-      err.hidden = false;
+      avisar(avisos.join(' ') || 'No encontré semanas desde el 5 de octubre en esos archivos.');
       return;
     }
     // Actualizar reemplaza solo las sucursales que se escogieron.
@@ -529,6 +644,7 @@ function leerArchivos(lista){
     guardar();
     semanaSel = null;
     iniciar();
+    avisar(avisos.join(' '));
   }
   siguiente();
 }
@@ -745,6 +861,7 @@ function renderRevisar(){
 }
 
 datos = cargarGuardado();
+if (carpetaGuardada()) document.getElementById('carpeta').value = 'https://drive.google.com/drive/folders/' + carpetaGuardada();
 if (datos && datos.sucursales && Object.keys(datos.sucursales).length) iniciar();
 </script>
 </body>

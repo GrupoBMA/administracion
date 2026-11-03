@@ -22,7 +22,7 @@ Producto, usuario y principios: ver `PRODUCT.md`. Diseño: muy minimalista, amab
 
 ## Regla estricta: el Drive es de solo lectura
 
-**Prohibido modificar, mover o borrar cualquier archivo del Drive** (ni los Excel de las sucursales ni nada más), tanto desde la app como al trabajar con Claude. Solo se extrae. La app abre los archivos en el navegador con un `<input type=file>`: no los sube a ningún lado y no puede escribirlos. Al probar, trabajar sobre copias en `.local/` (ignorada por git) y borrarlas al terminar.
+**Prohibido modificar, mover o borrar cualquier archivo del Drive** (ni los Excel de las sucursales ni nada más), tanto desde la app como al trabajar con Claude. Solo se extrae. La app lee el Drive con permiso `drive.readonly` (Google bloquea cualquier escritura) o abre archivos locales con un `<input type=file>`; no sube ni escribe nada. Al probar, trabajar sobre copias en `.local/` (ignorada por git) y borrarlas al terminar.
 
 ## Estado actual (3-nov-2026)
 
@@ -42,8 +42,16 @@ Un Excel por sucursal (`Reporte2026-<SUC> ….xlsx`, la sucursal sale del nombre
 - `calcular(datos)`: recalcula la caja de cada sucursal encadenando semanas (la primera arranca en el "Reporte Anterior" de su pestaña), separa cobros y egresos y arma los problemas: método mal escrito o sin método, egreso sin tipo, saldo anterior que no encadena y diferencia contra el "Total Reporte" (solo cuando la diferencia cambia, para no repetir la misma cada semana). **Lo que calcula la app manda**; lo que dice la sucursal se muestra como diferencia.
 - Límites: `LIMITE_CAJA` = $10,000 (fila en rojo y excedente), `LIMITE_GRAVE` = $30,000 (rojo más fuerte).
 
+### Conexión con Google Drive
+Los reportes son **Google Sheets** en una carpeta compartida con una cuenta de Google distinta de gvf.operativo.
+- Proyecto de Google Cloud **Grupo BMA** (creado por el usuario con esa cuenta), con Google Drive API habilitada, pantalla de consentimiento en modo **prueba** (solo las cuentas agregadas como usuarios de prueba pueden conectarse) y un cliente OAuth web cuyo ID está en `GOOGLE_CLIENT_ID`. Orígenes autorizados: `https://grupobma.github.io` y `http://localhost:8765`. El ID de cliente es público por diseño; el secreto no se usa ni se guarda.
+- Alcance `drive.readonly`: Google mismo impide escribir. La app solo hace GET: lista la carpeta (`archivosDeCarpeta`, solo archivos con "REPORTE" en el nombre), exporta cada Google Sheet como .xlsx (o baja el .xlsx tal cual) y lo pasa a `leerLibro`.
+- El token se pide con Google Identity Services (`pedirToken`, ventana de Google al dar clic) y vive solo en memoria (1 hora).
+- El enlace de la carpeta **no va en el código** (repo público): se pide en la pantalla de inicio y se guarda en `localStorage` (`bma.carpeta.v1`).
+- La sucursal sale del nombre del archivo; si no la trae (Morelia se llama "reporte 2026"), de la clave de las pestañas (`CLAVES_HOJA`, p. ej. "MLM" = Morelia) o de la ciudad escrita en las primeras filas (`CIUDADES`).
+
 ### Interfaz
-- Sin datos: pantalla para escoger los Excel. "Actualizar" vuelve a leer y reemplaza solo las sucursales escogidas.
+- Sin datos: pantalla para pegar el enlace de la carpeta y "Conectar con Google"; como respaldo, escoger los Excel de la computadora. "Actualizar" vuelve a leer la carpeta guardada (o abre el selector de archivos si no hay carpeta) y reemplaza solo las sucursales que encontró. Errores y archivos sin sucursal reconocida salen en un aviso arriba.
 - Lo leído se guarda en `localStorage` (`bma.reportes.v1`) solo como copia de lo que está en el Drive, que es la fuente; se puede borrar sin perder nada. Abre en la semana más reciente en la que alguna sucursal ya capturó algo; una sucursal sin pestaña esa semana arrastra su última caja ("Sin reporte esta semana").
 - Caja: sucursales ordenadas por efectivo; cada fila se abre con el cálculo y el historial por semana. Cobros y Gastos: filtro por sucursal, totales arriba y tabla. Revisar: problemas de la semana con pestaña y fila para llamarle a la sucursal.
 - MOR y ZAP quedan fuera por ahora (sus archivos no tienen semanas desde el 5 de octubre).

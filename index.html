@@ -37,8 +37,7 @@ button{font-family:var(--font);cursor:pointer;color:inherit}
 header{background:var(--surface);border-bottom:1px solid var(--border)}
 .head-in{max-width:1000px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 h1{font-size:18px;font-weight:600;letter-spacing:-0.01em;margin-right:auto}
-.semana{display:flex;align-items:center;gap:2px}
-.semana .lbl{font-size:14px;font-weight:500;min-width:118px;text-align:center}
+.leido{font-size:13px;color:var(--text2)}
 .icono{width:32px;height:32px;border:none;background:none;border-radius:8px;display:grid;place-items:center;color:var(--text2);transition:background .15s}
 .icono:hover:not(:disabled){background:var(--surface2);color:var(--text)}
 .icono:disabled{opacity:.3;cursor:default}
@@ -122,6 +121,7 @@ td.der,th.der{text-align:right}
 .prob-txt{font-size:14px}
 .prob-donde{font-size:12px;color:var(--text3);margin-top:3px}
 .prob .num{font-size:14px;padding-top:1px}
+.prob.hecho .prob-txt,.prob.hecho .num{color:var(--text2)}
 
 /* Sin datos */
 .inicio{max-width:440px;margin:12vh auto 0;text-align:center}
@@ -136,7 +136,6 @@ td.der,th.der{text-align:right}
 
 @media(max-width:640px){
   .detalle{grid-template-columns:1fr;gap:18px}
-  .semana .lbl{min-width:96px;font-size:13px}
   .totales{gap:18px}
   th:nth-child(2),td:nth-child(2){display:none}
 }
@@ -148,11 +147,7 @@ td.der,th.der{text-align:right}
 <header>
   <div class="head-in">
     <h1>Grupo BMA</h1>
-    <div class="semana" id="semana" hidden>
-      <button class="icono" id="sem-ant" onclick="moverSemana(-1)" aria-label="Semana anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-      <span class="lbl" id="sem-lbl"></span>
-      <button class="icono" id="sem-sig" onclick="moverSemana(1)" aria-label="Semana siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
-    </div>
+    <span class="leido" id="leido" hidden></span>
     <button class="btn" id="btn-actualizar" onclick="actualizar()" hidden>Actualizar</button>
     <input type="file" id="archivos" accept=".xlsx" multiple hidden onchange="leerArchivos(this.files)">
   </div>
@@ -439,9 +434,10 @@ function calcular(datos){
       var s = {lunes:h.lunes, hoja:h.nombre, anterior:null, efectivo:0, salidas:{}, totalSalidas:0,
         caja:0, dice:h.total, cobros:[], egresos:[], apartados:[], porMetodo:{}, hayDatos:false};
       s.anterior = caja === null ? (h.anterior || 0) : caja;
-      function prob(o){ o.lunes = h.lunes; o.hoja = h.nombre; res.problemas.push(o); }
+      // La clave no usa la fila: si la sucursal mete renglones, el mismo problema sigue siendo el mismo.
+      function prob(o, clave){ o.lunes = h.lunes; o.hoja = h.nombre; o.sucursal = suc; o.clave = [suc, h.lunes, clave].join('|'); res.problemas.push(o); }
       if (idx > 0 && totalPrev !== null && h.anterior !== null && Math.abs(h.anterior - totalPrev) >= 1)
-        prob({texto:'El saldo anterior no coincide con el Total Reporte de la semana pasada', monto:h.anterior - totalPrev});
+        prob({texto:'El saldo anterior no coincide con el Total Reporte de la semana pasada', monto:h.anterior - totalPrev}, 'cadena');
       h.cobros.forEach(function(c){
         var k = clasificarCobro(c);
         var o = Object.assign({}, c, {tipo:k.tipo, metodoN:k.metodo.valor});
@@ -453,11 +449,11 @@ function calcular(datos){
         s.porMetodo[m] = (s.porMetodo[m] || 0) + c.monto;
         if (k.metodo.valor === 'EFECTIVO' || k.metodo.valor === 'PRESTAMO') s.efectivo += c.monto;
         if (k.metodo.corregido)
-          prob({texto:textoCorregido('Método', k.metodo), detalle:'El Excel no lo suma; aquí cuenta como ' + NOMBRE_METODO[k.metodo.valor], fila:c.fila, monto:c.monto});
+          prob({texto:textoCorregido('Método', k.metodo), detalle:'El Excel no lo suma; aquí cuenta como ' + NOMBRE_METODO[k.metodo.valor], fila:c.fila, monto:c.monto}, ['metodo', k.metodo.original, c.monto, norm(c.producto)].join('|'));
         else if (!k.metodo.valor && k.metodo.original)
-          prob({texto:'Método “' + k.metodo.original + '” no reconocido', detalle:'No se cuenta en ningún método', fila:c.fila, monto:c.monto});
+          prob({texto:'Método “' + k.metodo.original + '” no reconocido', detalle:'No se cuenta en ningún método', fila:c.fila, monto:c.monto}, ['metodo?', k.metodo.original, c.monto, norm(c.producto)].join('|'));
         else if (!k.metodo.valor)
-          prob({texto:'Cobro sin método de pago', detalle:c.producto || c.categoria, fila:c.fila, monto:c.monto});
+          prob({texto:'Cobro sin método de pago', detalle:c.producto || c.categoria, fila:c.fila, monto:c.monto}, ['sinmetodo', c.monto, norm(c.producto)].join('|'));
       });
       h.egresos.forEach(function(e){
         var k = aCatalogo(e.tipo, TIPOS_EGRESO, ALIAS_EGRESO);
@@ -466,14 +462,14 @@ function calcular(datos){
         s.egresos.push(Object.assign({}, e, {tipoN:t}));
         s.salidas[t] = (s.salidas[t] || 0) + e.monto;
         s.totalSalidas += e.monto;
-        if (k.corregido) prob({texto:textoCorregido('Egreso', k), detalle:'El Excel no lo resta; aquí cuenta como ' + NOMBRE_EGRESO[k.valor], fila:e.fila, monto:e.monto});
-        else if (!k.valor) prob({texto:k.original ? 'Tipo de egreso “' + k.original + '” no reconocido' : 'Egreso sin tipo', detalle:e.descripcion, fila:e.fila, monto:e.monto});
+        if (k.corregido) prob({texto:textoCorregido('Egreso', k), detalle:'El Excel no lo resta; aquí cuenta como ' + NOMBRE_EGRESO[k.valor], fila:e.fila, monto:e.monto}, ['egreso', k.original, e.monto, norm(e.descripcion)].join('|'));
+        else if (!k.valor) prob({texto:k.original ? 'Tipo de egreso “' + k.original + '” no reconocido' : 'Egreso sin tipo', detalle:e.descripcion, fila:e.fila, monto:e.monto}, ['egreso?', k.original, e.monto, norm(e.descripcion)].join('|'));
       });
       s.caja = s.anterior + s.efectivo - s.totalSalidas;
       if (h.total !== null){
         var dif = s.caja - h.total;
         if (Math.abs(dif - difPrev) >= 1)
-          prob({texto:'La sucursal reporta ' + dinero(h.total) + ' en caja; aquí da ' + dinero(s.caja), monto:dif, diferencia:true});
+          prob({texto:'La sucursal reporta ' + dinero(h.total) + ' en caja; aquí da ' + dinero(s.caja), monto:dif, diferencia:true}, 'diferencia');
         difPrev = dif;
       }
       totalPrev = h.total;
@@ -498,7 +494,7 @@ if (typeof module !== 'undefined') module.exports = {leerLibro:leerLibro, calcul
 var CLAVE = 'bma.reportes.v1';
 var datos = null;        // lo leido de los Excel: {leido, sucursales:{AGS:{archivo,hojas}}}
 var calc = null;         // resultado de calcular(datos)
-var semanaSel = null;
+var revisarVista = 'pendientes';
 var moduloSel = 'caja';
 var sucFiltro = 'todas';
 var abiertas = {};
@@ -674,7 +670,8 @@ function procesar(fuentes){
     if (datos) Object.keys(datos.sucursales).forEach(function(s){ if (!nuevos.sucursales[s]) nuevos.sucursales[s] = datos.sucursales[s]; });
     datos = nuevos;
     guardar();
-    semanaSel = null;
+    calc = calcular(datos);
+    conciliar();
     iniciar();
     avisar(avisos.join(' '));
   }
@@ -683,27 +680,33 @@ function procesar(fuentes){
 
 function iniciar(){
   calc = calcular(datos);
-  if (!semanaSel || calc.semanas.indexOf(semanaSel) < 0) semanaSel = semanaReciente();
   document.getElementById('inicio').hidden = true;
-  ['semana','tabs','btn-actualizar'].forEach(function(id){ document.getElementById(id).hidden = false; });
+  ['tabs','btn-actualizar','leido'].forEach(function(id){ document.getElementById(id).hidden = false; });
   render();
 }
 
-// La semana mas reciente en la que alguna sucursal ya capturo algo.
-function semanaReciente(){
-  for (var i = calc.semanas.length - 1; i >= 0; i--){
-    var l = calc.semanas[i];
-    var hay = Object.keys(calc.sucursales).some(function(s){ var x = calc.sucursales[s].semanas[l]; return x && x.hayDatos; });
-    if (hay) return l;
-  }
-  return calc.semanas[calc.semanas.length - 1];
+// --- Revisar: por corregir y corregidos ---
+// Cada vez que se actualiza, lo que estaba por corregir y ya no aparece se da por corregido.
+var CLAVE_REVISAR = 'bma.revisar.v1';
+function cargarRevisar(){ try { return JSON.parse(localStorage.getItem(CLAVE_REVISAR)) || {}; } catch(e){ return {}; } }
+function conciliar(){
+  var guardados = cargarRevisar(), ahora = new Date().toISOString(), vigentes = {};
+  todosLosProblemas().forEach(function(p){
+    vigentes[p.clave] = true;
+    var antes = guardados[p.clave];
+    guardados[p.clave] = Object.assign({}, p, {visto:antes ? antes.visto : ahora, corregido:null});
+  });
+  Object.keys(guardados).forEach(function(k){ if (!vigentes[k] && !guardados[k].corregido) guardados[k].corregido = ahora; });
+  try { localStorage.setItem(CLAVE_REVISAR, JSON.stringify(guardados)); } catch(e){}
 }
-
-function moverSemana(d){
-  var i = calc.semanas.indexOf(semanaSel) + d;
-  if (i < 0 || i >= calc.semanas.length) return;
-  semanaSel = calc.semanas[i];
-  render();
+function todosLosProblemas(){
+  var out = [];
+  Object.keys(calc.sucursales).forEach(function(s){ calc.sucursales[s].problemas.forEach(function(p){ out.push(p); }); });
+  return out;
+}
+function corregidos(){
+  var g = cargarRevisar();
+  return Object.keys(g).map(function(k){ return g[k]; }).filter(function(p){ return p.corregido; });
 }
 
 function selModulo(mod){
@@ -712,24 +715,21 @@ function selModulo(mod){
   render();
 }
 function selSucursal(s){ sucFiltro = s; render(); }
+function selRevisar(v){ revisarVista = v; renderRevisar(); }
 function alternar(s){ abiertas[s] = !abiertas[s]; renderCaja(); }
 function alternarApartados(){ verApartados = !verApartados; render(); }
-
-// Caja de una sucursal en la semana elegida; si no subio esa semana, arrastra la ultima que tenga.
-function cajaEn(res, lunes){
-  if (res.semanas[lunes]) return {s:res.semanas[lunes], arrastrada:false};
-  var previas = Object.keys(res.semanas).filter(function(l){ return l < lunes; }).sort();
-  return previas.length ? {s:res.semanas[previas[previas.length - 1]], arrastrada:true} : null;
-}
 function nivel(monto){ return monto > LIMITE_GRAVE ? 'muy-alto' : monto > LIMITE_CAJA ? 'alto' : ''; }
+function fechaHora(isoStr){
+  var d = new Date(isoStr);
+  return isNaN(d) ? '' : d.getDate() + ' ' + MESES[d.getMonth()] + ', ' + d.toLocaleTimeString('es-MX', {hour:'numeric', minute:'2-digit'});
+}
+function semanasDe(res){ return Object.keys(res.semanas).sort().map(function(l){ return res.semanas[l]; }); }
+function ultimaSemana(){ return calc.semanas[calc.semanas.length - 1]; }
 
 function render(){
-  document.getElementById('sem-lbl').textContent = etiquetaSemana(semanaSel);
-  var i = calc.semanas.indexOf(semanaSel);
-  document.getElementById('sem-ant').disabled = i <= 0;
-  document.getElementById('sem-sig').disabled = i >= calc.semanas.length - 1;
+  document.getElementById('leido').textContent = datos.leido ? 'Actualizado ' + fechaHora(datos.leido) : '';
   document.querySelectorAll('.modulo').forEach(function(m){ m.classList.toggle('on', m.id === 'mod-' + moduloSel); });
-  var n = problemasSemana().length;
+  var n = todosLosProblemas().length;
   var cr = document.getElementById('cuenta-revisar');
   cr.hidden = !n; cr.textContent = n;
   if (moduloSel === 'caja') renderCaja();
@@ -738,46 +738,52 @@ function render(){
   if (moduloSel === 'revisar') renderRevisar();
 }
 
+// La caja de hoy es la de la ultima pestaña de cada sucursal.
 function renderCaja(){
   var filas = Object.keys(calc.sucursales).map(function(s){
-    var res = calc.sucursales[s], c = cajaEn(res, semanaSel);
-    return c ? {res:res, s:c.s, arrastrada:c.arrastrada} : null;
-  }).filter(Boolean).sort(function(a, b){ return b.s.caja - a.s.caja; });
+    var res = calc.sucursales[s], sems = semanasDe(res);
+    return {res:res, sems:sems, s:sems[sems.length - 1]};
+  }).sort(function(a, b){ return b.s.caja - a.s.caja; });
   var arriba = filas.filter(function(f){ return f.s.caja > LIMITE_CAJA; }).length;
   var h = '<h2>' + (arriba === 0 ? 'Todas las cajas están en $10,000 o menos'
     : arriba === 1 ? '1 caja pasa de $10,000' : arriba + ' cajas pasan de $10,000') + '</h2>';
   h += '<div class="lista">';
   filas.forEach(function(f){
     var s = f.s, code = f.res.sucursal, nv = nivel(s.caja);
-    var nota = f.arrastrada ? 'Sin reporte esta semana'
-      : (s.dice !== null && Math.abs(s.caja - s.dice) >= 1) ? 'La sucursal reporta ' + dinero(s.dice) : '';
+    var notas = [];
+    if (s.dice !== null && Math.abs(s.caja - s.dice) >= 1) notas.push('La sucursal reporta ' + dinero(s.dice));
+    if (s.lunes < ultimaSemana()) notas.push('Último reporte ' + etiquetaSemana(s.lunes));
     h += '<div class="suc ' + nv + (abiertas[code] ? ' abierta' : '') + '">';
     h += '<button class="suc-fila" onclick="alternar(\'' + code + '\')" aria-expanded="' + !!abiertas[code] + '">';
     h += '<svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
-    h += '<span class="suc-izq"><span class="suc-nombre">' + esc(f.res.nombre) + '</span>' + (nota ? '<span class="suc-nota" style="display:block">' + esc(nota) + '</span>' : '') + '</span>';
+    h += '<span class="suc-izq"><span class="suc-nombre">' + esc(f.res.nombre) + '</span>' + (notas.length ? '<span class="suc-nota" style="display:block">' + esc(notas.join(' · ')) + '</span>' : '') + '</span>';
     h += '<span><span class="suc-monto num">' + dinero(s.caja) + '</span>' + (nv ? '<span class="exceso num">+' + dinero(s.caja - LIMITE_CAJA) + '</span>' : '') + '</span>';
     h += '</button>';
-    h += '<div class="detalle">' + detalleCaja(f.res, s, f.arrastrada) + '</div></div>';
+    h += '<div class="detalle">' + detalleCaja(f.sems) + '</div></div>';
   });
   h += '</div>';
   document.getElementById('mod-caja').innerHTML = h;
 }
 
-function detalleCaja(res, s, arrastrada){
-  var h = '<div class="cuentas-caja">';
-  if (arrastrada) h += '<div class="subt">Última semana con reporte: ' + etiquetaSemana(s.lunes) + '</div>';
-  h += '<div class="linea"><span>Semana anterior</span><span class="num">' + dinero(s.anterior) + '</span></div>';
-  h += '<div class="linea"><span>Entró en efectivo</span><span class="num">+' + dinero(s.efectivo).slice(1) + '</span></div>';
-  Object.keys(s.salidas).sort(function(a, b){ return s.salidas[b] - s.salidas[a]; }).forEach(function(t){
-    h += '<div class="linea"><span>' + (NOMBRE_EGRESO[t] || 'Sin tipo') + '</span><span class="num">' + dinero(-s.salidas[t]) + '</span></div>';
+// Desde el 5 de octubre: con lo que arranco, lo que entro en efectivo y lo que salio, por tipo.
+function detalleCaja(sems){
+  var efectivo = 0, salidas = {}, ultima = sems[sems.length - 1];
+  sems.forEach(function(s){
+    efectivo += s.efectivo;
+    Object.keys(s.salidas).forEach(function(t){ salidas[t] = (salidas[t] || 0) + s.salidas[t]; });
   });
-  h += '<div class="linea total"><span>Queda en caja</span><span class="num">' + dinero(s.caja) + '</span></div>';
-  if (s.dice !== null && Math.abs(s.caja - s.dice) >= 1)
-    h += '<div class="linea dice"><span>La sucursal reporta</span><span class="num">' + dinero(s.dice) + '</span></div>';
-  h += '</div><div class="historia"><div class="subt">Por semana</div>';
-  Object.keys(res.semanas).sort().reverse().forEach(function(l){
-    var x = res.semanas[l];
-    h += '<div class="linea' + (x.caja > LIMITE_CAJA ? ' alto' : '') + (l === s.lunes ? ' actual' : '') + '"><span>' + etiquetaSemana(l) + '</span><span class="num">' + dinero(x.caja) + '</span></div>';
+  var h = '<div class="cuentas-caja">';
+  h += '<div class="linea"><span>Al ' + fechaCorta(sems[0].lunes) + '</span><span class="num">' + dinero(sems[0].anterior) + '</span></div>';
+  h += '<div class="linea"><span>Entró en efectivo</span><span class="num">+' + dinero(efectivo) + '</span></div>';
+  Object.keys(salidas).sort(function(a, b){ return salidas[b] - salidas[a]; }).forEach(function(t){
+    h += '<div class="linea"><span>' + (NOMBRE_EGRESO[t] || 'Sin tipo') + '</span><span class="num">' + dinero(-salidas[t]) + '</span></div>';
+  });
+  h += '<div class="linea total"><span>Queda en caja</span><span class="num">' + dinero(ultima.caja) + '</span></div>';
+  if (ultima.dice !== null && Math.abs(ultima.caja - ultima.dice) >= 1)
+    h += '<div class="linea dice"><span>La sucursal reporta</span><span class="num">' + dinero(ultima.dice) + '</span></div>';
+  h += '</div><div class="historia"><div class="subt">Cómo fue cambiando</div>';
+  sems.slice().reverse().forEach(function(x){
+    h += '<div class="linea' + (x.caja > LIMITE_CAJA ? ' alto' : '') + '"><span>' + etiquetaSemana(x.lunes) + '</span><span class="num">' + dinero(x.caja) + '</span></div>';
   });
   return h + '</div>';
 }
@@ -789,18 +795,22 @@ function chipsSucursales(){
   });
   return h + '</div>';
 }
+// Todas las semanas de las sucursales del filtro.
 function semanasFiltradas(){
-  return Object.keys(calc.sucursales).filter(function(s){ return sucFiltro === 'todas' || s === sucFiltro; })
-    .map(function(s){ return {res:calc.sucursales[s], s:calc.sucursales[s].semanas[semanaSel]}; })
-    .filter(function(x){ return x.s; });
+  var out = [];
+  Object.keys(calc.sucursales).filter(function(s){ return sucFiltro === 'todas' || s === sucFiltro; }).forEach(function(s){
+    semanasDe(calc.sucursales[s]).forEach(function(x){ out.push({res:calc.sucursales[s], s:x}); });
+  });
+  return out;
 }
-function ordenFecha(a, b){ return (a.fecha || '9').localeCompare(b.fecha || '9') || a.fila - b.fila; }
+// Lo mas reciente primero. Manda la semana de la pestaña: hay fechas capturadas fuera de su semana.
+function ordenFecha(a, b){ return b.lunes.localeCompare(a.lunes) || (b.fecha || '').localeCompare(a.fecha || '') || a.fila - b.fila; }
 
 function renderCobros(){
   var lista = [], apartados = [], porMet = {};
   semanasFiltradas().forEach(function(x){
-    x.s.cobros.forEach(function(c){ lista.push(Object.assign({suc:x.res.nombre}, c)); });
-    x.s.apartados.forEach(function(c){ apartados.push(Object.assign({suc:x.res.nombre}, c)); });
+    x.s.cobros.forEach(function(c){ lista.push(Object.assign({suc:x.res.nombre, lunes:x.s.lunes}, c)); });
+    x.s.apartados.forEach(function(c){ apartados.push(Object.assign({suc:x.res.nombre, lunes:x.s.lunes}, c)); });
     Object.keys(x.s.porMetodo).forEach(function(m){ porMet[m] = (porMet[m] || 0) + x.s.porMetodo[m]; });
   });
   lista.sort(ordenFecha);
@@ -820,7 +830,7 @@ function renderCobros(){
   document.getElementById('mod-cobros').innerHTML = h;
 }
 function tablaCobros(lista, conSuc){
-  if (!lista.length) return '<div class="tabla-wrap"><div class="vacio-chico">Sin cobros esta semana.</div></div>';
+  if (!lista.length) return '<div class="tabla-wrap"><div class="vacio-chico">Sin cobros.</div></div>';
   var h = '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th>' + (conSuc ? '<th>Sucursal</th>' : '') +
     '<th>Concepto</th><th>Tipo</th><th>Método</th><th class="der">Monto</th></tr></thead><tbody>';
   lista.forEach(function(c){
@@ -837,7 +847,7 @@ function tablaCobros(lista, conSuc){
 function renderGastos(){
   var lista = [], porTipo = {};
   semanasFiltradas().forEach(function(x){
-    x.s.egresos.forEach(function(e){ lista.push(Object.assign({suc:x.res.nombre}, e)); porTipo[e.tipoN] = (porTipo[e.tipoN] || 0) + e.monto; });
+    x.s.egresos.forEach(function(e){ lista.push(Object.assign({suc:x.res.nombre, lunes:x.s.lunes}, e)); porTipo[e.tipoN] = (porTipo[e.tipoN] || 0) + e.monto; });
   });
   lista.sort(ordenFecha);
   // Depositos y prestamos salen de la caja pero no son gasto.
@@ -854,7 +864,7 @@ function renderGastos(){
   h += '<div class="tot aparte"><span class="t-lbl">Depósitos al banco</span><span class="num">' + dinero(porTipo.DEPOSITO || 0) + '</span></div>';
   if (porTipo.PRESTAMO) h += '<div class="tot aparte"><span class="t-lbl">Préstamos a empleados</span><span class="num">' + dinero(porTipo.PRESTAMO) + '</span></div>';
   h += '</div>';
-  if (!lista.length) h += '<div class="tabla-wrap"><div class="vacio-chico">Sin egresos esta semana.</div></div>';
+  if (!lista.length) h += '<div class="tabla-wrap"><div class="vacio-chico">Sin egresos.</div></div>';
   else {
     var conSuc = sucFiltro === 'todas';
     h += '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th>' + (conSuc ? '<th>Sucursal</th>' : '') + '<th>Concepto</th><th>Tipo</th><th class="der">Monto</th></tr></thead><tbody>';
@@ -868,23 +878,26 @@ function renderGastos(){
   document.getElementById('mod-gastos').innerHTML = h;
 }
 
-function problemasSemana(){
-  var out = [];
-  Object.keys(calc.sucursales).forEach(function(s){
-    calc.sucursales[s].problemas.forEach(function(p){ if (p.lunes === semanaSel) out.push(Object.assign({suc:calc.sucursales[s].nombre}, p)); });
-  });
-  return out;
-}
 function renderRevisar(){
-  var ps = problemasSemana();
-  var h = '<h2>' + (ps.length ? (ps.length === 1 ? '1 cosa por revisar' : ps.length + ' cosas por revisar') : 'Todo cuadra esta semana') + '</h2>';
+  var pend = todosLosProblemas(), hechos = corregidos();
+  var ver = revisarVista === 'corregidos' ? hechos : pend;
+  var h = '<div class="chips">' +
+    '<button class="chip' + (revisarVista === 'pendientes' ? ' on' : '') + '" onclick="selRevisar(\'pendientes\')">Por corregir · ' + pend.length + '</button>' +
+    '<button class="chip' + (revisarVista === 'corregidos' ? ' on' : '') + '" onclick="selRevisar(\'corregidos\')">Corregidos · ' + hechos.length + '</button></div>';
+  if (!ver.length) h += '<div class="lista"><div class="vacio-chico">' + (revisarVista === 'corregidos'
+    ? 'Aquí aparece lo que las sucursales corrijan en su Excel.' : 'Todo cuadra.') + '</div></div>';
   var grupos = {};
-  ps.forEach(function(p){ (grupos[p.suc] = grupos[p.suc] || []).push(p); });
-  Object.keys(grupos).forEach(function(g){
+  ver.slice().sort(function(a, b){ return (b.corregido || '').localeCompare(a.corregido || '') || b.lunes.localeCompare(a.lunes) || (a.fila || 0) - (b.fila || 0); })
+    .forEach(function(p){ var n = SUCURSALES[p.sucursal] || p.sucursal; (grupos[n] = grupos[n] || []).push(p); });
+  Object.keys(grupos).sort().forEach(function(g){
     h += '<div class="grupo"><h3>' + esc(g) + '</h3><div class="lista">';
     grupos[g].forEach(function(p){
-      h += '<div class="prob"><div><div class="prob-txt">' + esc(p.texto) + '</div><div class="prob-donde">' +
-        (p.detalle ? esc(p.detalle) + ' · ' : '') + 'Pestaña «' + esc(p.hoja.trim()) + '»' + (p.fila ? ' · fila ' + p.fila : '') + '</div></div>' +
+      var donde = [];
+      if (p.detalle) donde.push(esc(p.detalle));
+      donde.push('Semana ' + etiquetaSemana(p.lunes));
+      donde.push('Pestaña «' + esc(p.hoja.trim()) + '»' + (p.fila ? ' · fila ' + p.fila : ''));
+      if (p.corregido) donde.push('Corregido ' + fechaHora(p.corregido));
+      h += '<div class="prob' + (p.corregido ? ' hecho' : '') + '"><div><div class="prob-txt">' + esc(p.texto) + '</div><div class="prob-donde">' + donde.join(' · ') + '</div></div>' +
         '<span class="num">' + (p.diferencia ? (p.monto > 0 ? '+' : '') + dinero(p.monto) : dinero(p.monto)) + '</span></div>';
     });
     h += '</div></div>';

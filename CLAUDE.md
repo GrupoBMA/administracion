@@ -26,7 +26,7 @@ Producto, usuario y principios: ver `PRODUCT.md`. Diseño: muy minimalista, amab
 
 ## Estado actual (3-nov-2026)
 
-`index.html` lee los reportes semanales de las sucursales y muestra cuatro pestañas para la semana elegida (flechas en el encabezado): **Caja**, **Cobros**, **Gastos** y **Revisar**. Sin Supabase ni inicio de sesión todavía.
+`index.html` lee los reportes semanales de las sucursales y muestra cuatro pestañas con **vista general, sin semanas** (decisión del 3-nov-2026): **Caja**, **Cobros**, **Gastos** y **Revisar**. Sin Supabase ni inicio de sesión todavía.
 
 ### Cómo son los reportes
 Un Excel por sucursal (`Reporte2026-<SUC> ….xlsx`, la sucursal sale del nombre del archivo), una pestaña por semana. Cada pestaña tiene: resumen en columnas A–C ("Reporte Anterior", métodos, egresos, "Total Reporte"), lista de cobros (encabezado con CATEGORIA y PRODUCTO) y egresos (encabezado "EGRESOS / DEPOSITOS"), además de inventario, que se ignora. **Las columnas cambian de lugar entre sucursales y semanas**: el lector ubica cada sección por su título, nunca por letra.
@@ -39,7 +39,7 @@ Un Excel por sucursal (`Reporte2026-<SUC> ….xlsx`, la sucursal sale del nombre
 - `leerLibro(nombre, bytes)`: con SheetJS (`xlsx@0.18.5` de cdnjs) lee solo las últimas 12 pestañas (sin "Hoja…" ni "Copia…") y hasta 400 filas. `leerHoja` saca resumen, cobros y egresos. La semana de cada pestaña es el lunes más repetido en sus fechas; si no tiene fechas o repite una anterior, es la anterior + 7 días. Solo se toman semanas desde `INICIO` (`2026-10-05`).
 - `clasificarCobro`: contado, anticipo, liquidación, abono, flete, abono de préstamo, movimiento de inventario (p. ej. "SALIDA DE MERCANCIA", sin dinero) o cancelada. Inventario y canceladas se apartan ("movimientos sin dinero" en Cobros).
 - `aCatalogo`: lleva métodos y tipos de egreso a la lista válida (`METODOS`, `TIPOS_EGRESO`) y marca si estaban mal escritos, con espacios o con acento.
-- `calcular(datos)`: recalcula la caja de cada sucursal encadenando semanas (la primera arranca en el "Reporte Anterior" de su pestaña), separa cobros y egresos y arma los problemas: método mal escrito o sin método, egreso sin tipo, saldo anterior que no encadena y diferencia contra el "Total Reporte" (solo cuando la diferencia cambia, para no repetir la misma cada semana). **Lo que calcula la app manda**; lo que dice la sucursal se muestra como diferencia.
+- `calcular(datos)`: recalcula la caja de cada sucursal encadenando semanas (la primera arranca en el "Reporte Anterior" de su pestaña), separa cobros y egresos y arma los problemas (cada uno con una `clave` estable: sucursal, semana, tipo y datos del renglón, sin la fila, para reconocerlo aunque metan renglones): método mal escrito o sin método, egreso sin tipo, saldo anterior que no encadena y diferencia contra el "Total Reporte" (solo cuando la diferencia cambia, para no repetir la misma cada semana). **Lo que calcula la app manda**; lo que dice la sucursal se muestra como diferencia.
 - Límites: `LIMITE_CAJA` = $10,000 (fila en rojo y excedente), `LIMITE_GRAVE` = $30,000 (rojo más fuerte).
 
 ### Conexión con Google Drive
@@ -52,8 +52,10 @@ Los reportes son **Google Sheets** en una carpeta compartida con una cuenta de G
 
 ### Interfaz
 - Sin datos: pantalla para pegar el enlace de la carpeta y "Conectar con Google"; como respaldo, escoger los Excel de la computadora. "Actualizar" vuelve a leer la carpeta guardada (o abre el selector de archivos si no hay carpeta) y reemplaza solo las sucursales que encontró. Errores y archivos sin sucursal reconocida salen en un aviso arriba.
-- Lo leído se guarda en `localStorage` (`bma.reportes.v1`) solo como copia de lo que está en el Drive, que es la fuente; se puede borrar sin perder nada. Abre en la semana más reciente en la que alguna sucursal ya capturó algo; una sucursal sin pestaña esa semana arrastra su última caja ("Sin reporte esta semana").
-- Caja: sucursales ordenadas por efectivo; cada fila se abre con el cálculo y el historial por semana. Cobros y Gastos: filtro por sucursal, totales arriba y tabla. Revisar: problemas de la semana con pestaña y fila para llamarle a la sucursal.
+- Lo leído se guarda en `localStorage` (`bma.reportes.v1`) solo como copia de lo que está en el Drive, que es la fuente; se puede borrar sin perder nada. El encabezado dice cuándo se actualizó.
+- Caja: efectivo de hoy (última pestaña) de cada sucursal, ordenado de mayor a menor; avisa si la sucursal reporta otra cifra o si su último reporte es de una semana anterior. Al abrir una fila: con cuánto arrancó al 5 de octubre, lo que entró en efectivo, las salidas por tipo y cómo fue cambiando por semana.
+- Cobros y Gastos: todo desde el 5 de octubre, filtro por sucursal, totales arriba y tabla con lo más reciente primero. El orden lo manda la semana de la pestaña y luego la fecha, porque hay fechas mal capturadas (p. ej. "2 oct" en la pestaña del 2 de noviembre).
+- Revisar: subpestañas **Por corregir** y **Corregidos**. Al leer de nuevo (`procesar` → `conciliar`), lo que estaba por corregir y ya no aparece pasa a Corregidos con fecha y hora; si reaparece, vuelve a Por corregir. Se guarda en `localStorage` (`bma.revisar.v1`), solo en esta computadora. El número en la pestaña es lo que falta por corregir.
 - MOR y ZAP quedan fuera por ahora (sus archivos no tienen semanas desde el 5 de octubre).
 - Estilo de GVF: DM Sans / DM Mono, tonos cálidos, modo oscuro por `prefers-color-scheme`; tokens `--alerta*` para cajas arriba del límite.
 

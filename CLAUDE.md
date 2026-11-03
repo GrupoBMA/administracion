@@ -16,17 +16,44 @@ App web en HTML, parecida a la de GVF (`../../Aplicación GVF`), para administra
 | Rocket | `rocket` | Venta de canchas de pádel | Modelo de negocio por confirmar |
 | Melamina | `melamina` | Importación y venta de melamina en paquetes grandes | No es empresa formal; presentación (rollos o tablas) por confirmar |
 
-La clave es la que se guardará en los registros. El catálogo vive en el arreglo `EMPRESAS` de `index.html`.
+La clave es la que se guardará en los registros. El catálogo vive en el arreglo `EMPRESAS` de `index.html`. **Por ahora todo se maneja como un solo negocio** (decisión del 3-nov-2026): no hay selector de empresa.
 
-Módulos previstos (se construyen uno por uno): **Inventario**, **Cuentas por cobrar y pagar**, **Gastos**.
+Producto, usuario y principios: ver `PRODUCT.md`. Diseño: muy minimalista, amable e intuitivo; sin leyendas salvo que de verdad hagan falta. En cambios visuales usar el skill Impeccable (modo Operate) y correr su detector.
 
-## Estado actual (24-oct-2026)
+## Regla estricta: el Drive es de solo lectura
 
-Solo estructura: `index.html` con encabezado, selector de empresa (Todas + las cinco, un color por empresa) y tres pestañas con tarjetas "En construcción". No guarda nada, no se conecta a Supabase y no tiene inicio de sesión.
+**Prohibido modificar, mover o borrar cualquier archivo del Drive** (ni los Excel de las sucursales ni nada más), tanto desde la app como al trabajar con Claude. Solo se extrae. La app abre los archivos en el navegador con un `<input type=file>`: no los sube a ningún lado y no puede escribirlos. Al probar, trabajar sobre copias en `.local/` (ignorada por git) y borrarlas al terminar.
 
-- `selEmpresa(key)` / `renderEmpresas()`: estado en `empresaSel` (`'todas'` o una clave). Todavía no filtra nada.
-- `selModulo(mod)`: muestra la sección `#mod-<mod>`; estado en `moduloSel`.
-- Estilo copiado de GVF: fuentes DM Sans / DM Mono, mismas variables de color base y modo oscuro por `prefers-color-scheme`. Colores por empresa en `--<clave>` y `--<clave>-bg`.
+## Estado actual (3-nov-2026)
+
+`index.html` lee los reportes semanales de las sucursales y muestra cuatro pestañas para la semana elegida (flechas en el encabezado): **Caja**, **Cobros**, **Gastos** y **Revisar**. Sin Supabase ni inicio de sesión todavía.
+
+### Cómo son los reportes
+Un Excel por sucursal (`Reporte2026-<SUC> ….xlsx`, la sucursal sale del nombre del archivo), una pestaña por semana. Cada pestaña tiene: resumen en columnas A–C ("Reporte Anterior", métodos, egresos, "Total Reporte"), lista de cobros (encabezado con CATEGORIA y PRODUCTO) y egresos (encabezado "EGRESOS / DEPOSITOS"), además de inventario, que se ignora. **Las columnas cambian de lugar entre sucursales y semanas**: el lector ubica cada sección por su título, nunca por letra.
+
+- "Total Reporte" = efectivo físico en caja = Reporte Anterior + efectivo (+ abonos de préstamo) − todos los egresos.
+- El depósito como egreso es efectivo que la sucursal lleva a la cuenta principal (HSBC); no es gasto. Transferencias, tarjeta y depósitos de clientes caen en la subcuenta de la sucursal.
+- El SUMIF del Excel ignora mayúsculas pero **no espacios ni acentos** ni faltas de ortografía: "EFECTIVO ", "EFCTIVO" o "TRANSFERENCOA" quedan fuera de sus totales. La app sí los cuenta y los marca en Revisar.
+
+### Lector (`<script id="lector">`, sin DOM para poder probarlo en Node)
+- `leerLibro(nombre, bytes)`: con SheetJS (`xlsx@0.18.5` de cdnjs) lee solo las últimas 12 pestañas (sin "Hoja…" ni "Copia…") y hasta 400 filas. `leerHoja` saca resumen, cobros y egresos. La semana de cada pestaña es el lunes más repetido en sus fechas; si no tiene fechas o repite una anterior, es la anterior + 7 días. Solo se toman semanas desde `INICIO` (`2026-10-05`).
+- `clasificarCobro`: contado, anticipo, liquidación, abono, flete, abono de préstamo, movimiento de inventario (p. ej. "SALIDA DE MERCANCIA", sin dinero) o cancelada. Inventario y canceladas se apartan ("movimientos sin dinero" en Cobros).
+- `aCatalogo`: lleva métodos y tipos de egreso a la lista válida (`METODOS`, `TIPOS_EGRESO`) y marca si estaban mal escritos, con espacios o con acento.
+- `calcular(datos)`: recalcula la caja de cada sucursal encadenando semanas (la primera arranca en el "Reporte Anterior" de su pestaña), separa cobros y egresos y arma los problemas: método mal escrito o sin método, egreso sin tipo, saldo anterior que no encadena y diferencia contra el "Total Reporte" (solo cuando la diferencia cambia, para no repetir la misma cada semana). **Lo que calcula la app manda**; lo que dice la sucursal se muestra como diferencia.
+- Límites: `LIMITE_CAJA` = $10,000 (fila en rojo y excedente), `LIMITE_GRAVE` = $30,000 (rojo más fuerte).
+
+### Interfaz
+- Sin datos: pantalla para escoger los Excel. "Actualizar" vuelve a leer y reemplaza solo las sucursales escogidas.
+- Lo leído se guarda en `localStorage` (`bma.reportes.v1`) solo como copia de lo que está en el Drive, que es la fuente; se puede borrar sin perder nada. Abre en la semana más reciente en la que alguna sucursal ya capturó algo; una sucursal sin pestaña esa semana arrastra su última caja ("Sin reporte esta semana").
+- Caja: sucursales ordenadas por efectivo; cada fila se abre con el cálculo y el historial por semana. Cobros y Gastos: filtro por sucursal, totales arriba y tabla. Revisar: problemas de la semana con pestaña y fila para llamarle a la sucursal.
+- MOR y ZAP quedan fuera por ahora (sus archivos no tienen semanas desde el 5 de octubre).
+- Estilo de GVF: DM Sans / DM Mono, tonos cálidos, modo oscuro por `prefers-color-scheme`; tokens `--alerta*` para cajas arriba del límite.
+
+### Probar
+`.claude/launch.json` levanta `python -m http.server 8765`. Para datos reales, copiar los Excel a `.local/` y crear `File` con `fetch` desde la consola, o correr el lector en Node con la misma copia de SheetJS. Nunca subir datos reales: el repo es público.
+
+### Pendiente
+Cuentas por cobrar por cliente (cada cliente con número), préstamos a empleados por separado, subcuentas, semanas anteriores al 5 de octubre, inventario, Supabase e inicio de sesión.
 
 ## Repositorio y despliegue
 

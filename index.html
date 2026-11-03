@@ -6,58 +6,135 @@
 <title>Grupo BMA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&amp;family=DM+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
 :root{
   --bg:#F7F4EF;--surface:#FFFFFF;--surface2:#F0EDE7;--border:#E2DDD6;
-  --text:#1A1714;--text2:#6B6560;--text3:#9E9890;
-  /* Un color por empresa: chips del selector y, mas adelante, etiquetas de registros. */
-  --sunl:#C0392B;--sunl-bg:#FBEAE8;
-  --alzator:#B8860B;--alzator-bg:#FBF3D9;
-  --pastito:#2C7A5A;--pastito-bg:#E6F5EF;
-  --rocket:#1A5FA8;--rocket-bg:#E8F1FB;
-  --melamina:#8B4513;--melamina-bg:#FDF0E6;
-  --radius:10px;--radius-lg:16px;
+  --text:#1A1714;--text2:#6B6560;--text3:#8F887F;
+  /* Caja arriba del limite: tono suave y tono fuerte para montos grandes. */
+  --alerta:#B42318;--alerta-bg:#FCEDEB;--alerta-bg2:#F8D9D4;
+  --ok:#2C7A5A;
+  --radius:10px;--radius-lg:14px;
   --shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
   --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
 }
 @media(prefers-color-scheme:dark){:root{
   --bg:#141210;--surface:#1E1C19;--surface2:#262320;--border:#32302C;
-  --text:#F0ECE6;--text2:#9E9688;--text3:#6A6460;
-  --sunl:#E8746A;--sunl-bg:#2A100E;
-  --alzator:#E0B84A;--alzator-bg:#231D06;
-  --pastito:#3CB87A;--pastito-bg:#0A1F15;
-  --rocket:#5BA3E0;--rocket-bg:#0A1525;
-  --melamina:#D4894A;--melamina-bg:#251508;
+  --text:#F0ECE6;--text2:#A39B8E;--text3:#7D766E;
+  --alerta:#F08A7E;--alerta-bg:#2B1512;--alerta-bg2:#401B16;
+  --ok:#3CB87A;
 }}
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 80px}
-button{font-family:var(--font);cursor:pointer}
+html{color-scheme:light dark}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 80px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--text);color:var(--bg)}
+button{font-family:var(--font);cursor:pointer;color:inherit}
+:focus-visible{outline:2px solid var(--text);outline-offset:2px;border-radius:6px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
 
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px}
-.head-in{max-width:1100px;margin:0 auto}
-h1{font-size:20px;font-weight:600}
-.sub{font-size:13px;color:var(--text2);margin-top:2px}
+header{background:var(--surface);border-bottom:1px solid var(--border)}
+.head-in{max-width:1000px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+h1{font-size:18px;font-weight:600;letter-spacing:-0.01em;margin-right:auto}
+.semana{display:flex;align-items:center;gap:2px}
+.semana .lbl{font-size:14px;font-weight:500;min-width:118px;text-align:center}
+.icono{width:32px;height:32px;border:none;background:none;border-radius:8px;display:grid;place-items:center;color:var(--text2);transition:background .15s}
+.icono:hover:not(:disabled){background:var(--surface2);color:var(--text)}
+.icono:disabled{opacity:.3;cursor:default}
+.icono svg{width:18px;height:18px}
+.btn{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:500;transition:background .15s,border-color .15s}
+.btn:hover:not(:disabled){background:var(--surface2)}
+.btn:disabled{opacity:.6;cursor:progress}
+.btn.primario{background:var(--text);color:var(--bg);border-color:var(--text);padding:10px 20px;font-size:14px}
+.btn.primario:hover:not(:disabled){background:var(--text);opacity:.88}
 
-.empresas{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-.chip{border:1px solid var(--border);background:var(--surface);color:var(--text2);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:500}
-.chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
-.chip[data-emp="sunl"].on{background:var(--sunl);border-color:var(--sunl);color:#fff}
-.chip[data-emp="alzator"].on{background:var(--alzator);border-color:var(--alzator);color:#fff}
-.chip[data-emp="pastito"].on{background:var(--pastito);border-color:var(--pastito);color:#fff}
-.chip[data-emp="rocket"].on{background:var(--rocket);border-color:var(--rocket);color:#fff}
-.chip[data-emp="melamina"].on{background:var(--melamina);border-color:var(--melamina);color:#fff}
-
-nav.tabs{max-width:1100px;margin:16px auto 0;padding:0 16px;display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto}
-.tab{background:none;border:none;border-bottom:2px solid transparent;padding:10px 14px;font-size:14px;font-weight:500;color:var(--text2);white-space:nowrap}
+nav.tabs{max-width:1000px;margin:12px auto 0;padding:0 16px;display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{background:none;border:none;border-bottom:2px solid transparent;padding:10px 12px;font-size:14px;font-weight:500;color:var(--text2);white-space:nowrap;display:flex;align-items:center;gap:6px;transition:color .15s}
+.tab:hover{color:var(--text)}
 .tab.on{color:var(--text);border-bottom-color:var(--text)}
+.cuenta{font-family:var(--mono);font-size:11px;background:var(--alerta-bg2);color:var(--alerta);border-radius:999px;padding:1px 7px}
 
-main{max-width:1100px;margin:0 auto;padding:16px}
+main{max-width:1000px;margin:0 auto;padding:20px 16px}
 .modulo{display:none}
 .modulo.on{display:block}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:24px}
-.card h2{font-size:16px;font-weight:600;margin-bottom:6px}
-.card p{font-size:14px;color:var(--text2);line-height:1.5}
-.pendiente{display:inline-block;margin-top:12px;font-size:12px;font-family:var(--mono);color:var(--text3)}
+h2{font-size:22px;font-weight:600;letter-spacing:-0.02em;margin:4px 0 18px;text-wrap:balance}
+h2 .num{font-family:var(--font)}
+
+/* Caja */
+.lista{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.suc{border-top:1px solid var(--border)}
+.suc:first-child{border-top:none}
+.suc-fila{width:100%;display:flex;align-items:center;gap:12px;padding:16px 18px;background:none;border:none;text-align:left;transition:background .15s}
+.suc-fila:hover{background:var(--surface2)}
+.suc.alto .suc-fila{background:var(--alerta-bg)}
+.suc.muy-alto .suc-fila{background:var(--alerta-bg2)}
+.suc.alto .suc-fila:hover,.suc.muy-alto .suc-fila:hover{filter:brightness(.98)}
+.suc-nombre{font-size:15px;font-weight:500}
+.suc-nota{font-size:13px;color:var(--text2);margin-top:2px}
+.suc-izq{margin-right:auto;min-width:0}
+.suc-monto{font-size:20px;font-weight:500;text-align:right}
+.suc.alto .suc-monto,.suc.muy-alto .suc-monto{color:var(--alerta)}
+.exceso{display:block;font-size:12px;color:var(--alerta);text-align:right;margin-top:2px}
+.flecha{width:16px;height:16px;color:var(--text3);transition:transform .2s cubic-bezier(.2,.8,.2,1);flex:none}
+.suc.abierta .flecha{transform:rotate(90deg)}
+.detalle{display:none;padding:4px 18px 20px 18px;gap:32px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.suc.abierta .detalle{display:grid}
+.cuentas-caja{font-size:14px}
+.linea{display:flex;justify-content:space-between;gap:12px;padding:6px 0;color:var(--text2)}
+.linea .num{color:var(--text)}
+.linea.total{border-top:1px solid var(--border);margin-top:6px;padding-top:10px;color:var(--text);font-weight:600}
+.linea.dice{font-size:13px}
+.historia{font-size:13px}
+.historia .linea{padding:4px 0}
+.historia .linea.alto .num{color:var(--alerta)}
+.historia .linea.actual{color:var(--text);font-weight:500}
+.subt{font-size:12px;font-weight:500;color:var(--text3);margin-bottom:6px}
+
+/* Filtros y tablas */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--text2);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:500;transition:background .15s,color .15s}
+.chip:hover{color:var(--text)}
+.chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.totales{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:18px}
+.tot .t-lbl{font-size:13px;color:var(--text2)}
+.tot .num{font-size:18px;font-weight:500;margin-top:2px;display:block}
+.tot.aparte .num{color:var(--text2)}
+.tabla-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:12px;font-weight:500;color:var(--text3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.der,th.der{text-align:right}
+.concepto{max-width:360px}
+.secundario{display:block;font-size:12px;color:var(--text3);margin-top:1px}
+.etq{font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap}
+.etq.marca{color:var(--text)}
+.mas{background:none;border:none;font-size:13px;color:var(--text2);margin-top:14px;text-decoration:underline;text-underline-offset:3px}
+.mas:hover{color:var(--text)}
+.vacio-chico{padding:28px 18px;color:var(--text2);font-size:14px;text-align:center}
+
+/* Revisar */
+.grupo{margin-bottom:22px}
+.grupo h3{font-size:14px;font-weight:600;margin:0 0 8px 2px}
+.prob{display:flex;gap:16px;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border)}
+.prob:first-child{border-top:none}
+.prob-txt{font-size:14px}
+.prob-donde{font-size:12px;color:var(--text3);margin-top:3px}
+.prob .num{font-size:14px;padding-top:1px}
+
+/* Sin datos */
+.inicio{max-width:440px;margin:12vh auto 0;text-align:center}
+.inicio h2{margin-bottom:10px}
+.inicio p{color:var(--text2);font-size:14px;line-height:1.5;margin-bottom:22px}
+.error{color:var(--alerta);font-size:13px;margin-top:14px}
+
+@media(max-width:640px){
+  .detalle{grid-template-columns:1fr;gap:18px}
+  .semana .lbl{min-width:96px;font-size:13px}
+  .totales{gap:18px}
+  th:nth-child(2),td:nth-child(2){display:none}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
@@ -65,74 +142,610 @@ main{max-width:1100px;margin:0 auto;padding:16px}
 <header>
   <div class="head-in">
     <h1>Grupo BMA</h1>
-    <div class="sub">Inventario, cuentas y gastos de las empresas del grupo</div>
-    <div class="empresas" id="empresas"></div>
+    <div class="semana" id="semana" hidden>
+      <button class="icono" id="sem-ant" onclick="moverSemana(-1)" aria-label="Semana anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <span class="lbl" id="sem-lbl"></span>
+      <button class="icono" id="sem-sig" onclick="moverSemana(1)" aria-label="Semana siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+    <button class="btn" id="btn-actualizar" onclick="escogerArchivos()" hidden>Actualizar</button>
+    <input type="file" id="archivos" accept=".xlsx" multiple hidden onchange="leerArchivos(this.files)">
   </div>
 </header>
 
-<nav class="tabs" id="tabs">
-  <button class="tab on" data-mod="inventario" onclick="selModulo('inventario')">Inventario</button>
-  <button class="tab" data-mod="cuentas" onclick="selModulo('cuentas')">Cuentas por cobrar y pagar</button>
+<nav class="tabs" id="tabs" hidden>
+  <button class="tab on" data-mod="caja" onclick="selModulo('caja')">Caja</button>
+  <button class="tab" data-mod="cobros" onclick="selModulo('cobros')">Cobros</button>
   <button class="tab" data-mod="gastos" onclick="selModulo('gastos')">Gastos</button>
+  <button class="tab" data-mod="revisar" onclick="selModulo('revisar')">Revisar <span class="cuenta" id="cuenta-revisar" hidden></span></button>
 </nav>
 
 <main>
-  <section class="modulo on" id="mod-inventario">
-    <div class="card">
-      <h2>Inventario</h2>
-      <p>Existencias de cada empresa: motos, maquinaria, follaje, canchas y melamina.</p>
-      <span class="pendiente">En construcción</span>
-    </div>
+  <section class="inicio" id="inicio">
+    <h2>Carga los reportes de las sucursales</h2>
+    <p>Escoge los Excel de la carpeta del Drive. Se leen en esta computadora y no se modifican.</p>
+    <button class="btn primario" id="btn-escoger" onclick="escogerArchivos()">Escoger archivos</button>
+    <div class="error" id="error-inicio" hidden></div>
   </section>
-  <section class="modulo" id="mod-cuentas">
-    <div class="card">
-      <h2>Cuentas por cobrar y pagar</h2>
-      <p>Lo que nos deben los clientes y lo que le debemos a proveedores y prestamistas.</p>
-      <span class="pendiente">En construcción</span>
-    </div>
-  </section>
-  <section class="modulo" id="mod-gastos">
-    <div class="card">
-      <h2>Gastos</h2>
-      <p>Gastos normales y pagos a deudas, por separado para no contar dos veces lo mismo.</p>
-      <span class="pendiente">En construcción</span>
-    </div>
-  </section>
+  <section class="modulo" id="mod-caja"></section>
+  <section class="modulo" id="mod-cobros"></section>
+  <section class="modulo" id="mod-gastos"></section>
+  <section class="modulo" id="mod-revisar"></section>
 </main>
 
-<script>
-// Catalogo fijo de empresas. La clave es la que se guardara en los registros.
+<script id="lector">
+// Lector de los reportes semanales de las sucursales.
+// SOLO LECTURA: los archivos se abren en el navegador y nunca se escriben ni se suben.
+// Sin acceso al DOM, para poder probarlo fuera del navegador.
+
+var INICIO = '2026-10-05';     // primera semana que se toma en cuenta (lunes)
+var LIMITE_CAJA = 10000;       // efectivo maximo en caja
+var LIMITE_GRAVE = 30000;      // desde aqui la alerta se marca mas fuerte
+
+var SUCURSALES = {
+  AGS:'Aguascalientes', GDL:'Guadalajara', MAZ:'Mazatlán', PUE:'Puebla',
+  QRO:'Querétaro', TEP:'Tepic', MOR:'MOR', ZAP:'Zapopan'
+};
+
+// Catalogo de empresas. Por ahora todo se maneja como un solo negocio.
 var EMPRESAS = [
-  {key:'sunl',     nombre:'SUNL'},
-  {key:'alzator',  nombre:'Alzator'},
-  {key:'pastito',  nombre:'Pastito'},
-  {key:'rocket',   nombre:'Rocket'},
-  {key:'melamina', nombre:'Melamina'}
+  {key:'sunl', nombre:'SUNL'}, {key:'alzator', nombre:'Alzator'}, {key:'pastito', nombre:'Pastito'},
+  {key:'rocket', nombre:'Rocket'}, {key:'melamina', nombre:'Melamina'}
 ];
 
-var empresaSel = 'todas';
-var moduloSel = 'inventario';
+var METODOS = ['EFECTIVO','TRANSFERENCIA','TARJETA','DEPOSITO','MDO PAGO','CHEQUE','PRESTAMO'];
+var NOMBRE_METODO = {EFECTIVO:'Efectivo', TRANSFERENCIA:'Transferencia', TARJETA:'Tarjeta', DEPOSITO:'Depósito',
+  'MDO PAGO':'Mercado Pago', CHEQUE:'Cheque', PRESTAMO:'Préstamo'};
+var TIPOS_EGRESO = ['GASTOS','DEPOSITO','NOMINA','COMISIONES','MDO PAGO','DEVOLUCIONES','GARANTIAS','PRESTAMO',
+  'AGUINALDO','VACACIONES','DESCARGA','OTRO GASTO 1','OTRO GASTO 2','OTRO GASTO 3'];
+var NOMBRE_EGRESO = {GASTOS:'Gastos', DEPOSITO:'Depósito al banco', NOMINA:'Nómina', COMISIONES:'Comisión',
+  'MDO PAGO':'Mercado Pago', DEVOLUCIONES:'Devolución', GARANTIAS:'Garantía', PRESTAMO:'Préstamo a empleado',
+  AGUINALDO:'Aguinaldo', VACACIONES:'Vacaciones', DESCARGA:'Descarga y maniobra',
+  'OTRO GASTO 1':'Otro gasto', 'OTRO GASTO 2':'Otro gasto', 'OTRO GASTO 3':'Otro gasto'};
+var NOMBRE_TIPO = {contado:'Contado', anticipo:'Anticipo', liquidacion:'Liquidación', abono:'Abono',
+  flete:'Flete', prestamo:'Abono de préstamo', inventario:'Movimiento de inventario', cancelada:'Cancelada'};
 
-function renderEmpresas(){
-  var html = '<button class="chip' + (empresaSel==='todas'?' on':'') + '" onclick="selEmpresa(\'todas\')">Todas</button>';
-  EMPRESAS.forEach(function(e){
-    html += '<button class="chip' + (empresaSel===e.key?' on':'') + '" data-emp="' + e.key + '" onclick="selEmpresa(\'' + e.key + '\')">' + e.nombre + '</button>';
-  });
-  document.getElementById('empresas').innerHTML = html;
+function norm(s){
+  if (s === null || s === undefined) return '';
+  return String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
+}
+function texto(s){ return (s === null || s === undefined) ? '' : String(s).replace(/\s+/g,' ').trim(); }
+// Texto tal como esta en la celda: metodo y tipo de egreso se comparan como lo hace el SUMIF.
+function crudo(s){ return (s === null || s === undefined) ? '' : String(s); }
+function numero(v){ return (typeof v === 'number' && isFinite(v)) ? v : null; }
+
+function distancia(a, b){
+  var m = [], i, j;
+  for (i = 0; i <= a.length; i++) m[i] = [i];
+  for (j = 0; j <= b.length; j++) m[0][j] = j;
+  for (i = 1; i <= a.length; i++) for (j = 1; j <= b.length; j++)
+    m[i][j] = Math.min(m[i-1][j] + 1, m[i][j-1] + 1, m[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+  return m[a.length][b.length];
 }
 
-function selEmpresa(key){
-  empresaSel = key;
-  renderEmpresas();
+// Lleva un texto escrito a mano a la opcion valida mas cercana.
+// Devuelve {valor, original, corregido, motivo} o {valor:null, original} si no se parece a ninguna.
+// El SUMIF del Excel ignora mayusculas pero no espacios ni acentos: "EFECTIVO " o "DEPÓSITO"
+// se ven bien y aun asi el Excel no los suma. Por eso tambien se marcan.
+function aCatalogo(raw, lista, alias){
+  var n = norm(raw);
+  if (!n) return {valor:null, original:''};
+  var crudo = String(raw).toUpperCase();
+  if (alias && alias[n]) n = alias[n];
+  if (lista.indexOf(n) >= 0){
+    if (crudo === n) return {valor:n, original:texto(raw), corregido:false};
+    var motivo = crudo.trim() === n || crudo.replace(/\s+/g,' ').trim() === n ? 'espacios'
+      : norm(crudo) === n && crudo.normalize('NFD').replace(/[̀-ͯ]/g,'') === n ? 'acento' : 'escrito';
+    return {valor:n, original:texto(raw), corregido:true, motivo:motivo};
+  }
+  var mejor = null, d = 99;
+  lista.forEach(function(op){ var x = distancia(n, op); if (x < d){ d = x; mejor = op; } });
+  if (d <= 2 || (mejor && d <= 3 && n.length >= 8)) return {valor:mejor, original:texto(raw), corregido:true, motivo:'escrito'};
+  return {valor:null, original:texto(raw)};
+}
+function textoCorregido(que, k){
+  return k.motivo === 'espacios' ? que + ' “' + k.original + '” con un espacio de más'
+    : k.motivo === 'acento' ? que + ' “' + k.original + '” con acento'
+    : que + ' escrito “' + k.original + '”';
+}
+var ALIAS_METODO = {'MERCADO PAGO':'MDO PAGO','TRANSFERENCIAS':'TRANSFERENCIA','DEPOSITOS':'DEPOSITO','TARJETAS':'TARJETA'};
+var ALIAS_EGRESO = {'GASTO':'GASTOS','DEPOSITOS':'DEPOSITO','COMISION':'COMISIONES','GARANTIA':'GARANTIAS',
+  'DEVOLUCION':'DEVOLUCIONES','PRESTAMOS':'PRESTAMO','DESCARGA Y MANIOBRA':'DESCARGA','MERCADO PAGO':'MDO PAGO'};
+
+function iso(d){
+  var y = d.getFullYear(), m = d.getMonth() + 1, dd = d.getDate();
+  return y + '-' + (m < 10 ? '0' : '') + m + '-' + (dd < 10 ? '0' : '') + dd;
+}
+function aFecha(v){
+  if (Object.prototype.toString.call(v) === '[object Date]' && !isNaN(v)) {
+    var d = new Date(v.getTime() + 12 * 3600 * 1000);   // evita brincos de dia por zona horaria
+    var y = d.getFullYear();
+    return (y >= 2020 && y <= 2035) ? new Date(y, d.getMonth(), d.getDate()) : null;
+  }
+  return null;
+}
+function lunesDe(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return iso(x); }
+function sumarDias(isoStr, n){ var p = isoStr.split('-'); var d = new Date(+p[0], +p[1] - 1, +p[2] + n); return iso(d); }
+
+function sucursalDeArchivo(nombre){
+  var m = norm(nombre).match(/\b(AGS|GDL|MAZ|MOR|PUE|QRO|TEP|ZAP)\b/) || norm(nombre).match(/(AGS|GDL|MAZ|MOR|PUE|QRO|TEP|ZAP)/);
+  return m ? m[1] : null;
+}
+
+// Lee una pestaña ya convertida en filas (arreglo de arreglos).
+function leerHoja(nombre, filas){
+  var hoja = {nombre:nombre, anterior:null, total:null, cobros:[], egresos:[], lunes:null};
+  var i, j, r;
+  // Resumen: etiqueta en las columnas A a C y el valor a su derecha.
+  for (i = 0; i < Math.min(60, filas.length); i++){
+    r = filas[i] || [];
+    for (j = 0; j < 3; j++){
+      var lab = norm(r[j]);
+      if (lab && numero(r[j+1]) !== null){
+        if (lab.indexOf('ANTERIOR') >= 0 && hoja.anterior === null) hoja.anterior = r[j+1];
+        if (lab.indexOf('TOTAL REPORTE') >= 0 && hoja.total === null) hoja.total = r[j+1];
+        break;
+      }
+    }
+  }
+  // Encabezado de la lista de cobros.
+  var hv = -1, cols = {};
+  for (i = 0; i < Math.min(15, filas.length) && hv < 0; i++){
+    var nn = (filas[i] || []).map(norm);
+    if (nn.indexOf('CATEGORIA') >= 0 && nn.indexOf('PRODUCTO') >= 0) hv = i;
+  }
+  if (hv < 0) return null;
+  (filas[hv] || []).forEach(function(x, c){
+    var n = norm(x);
+    if (!n || c < 3) return;
+    if (n.indexOf('FECHA') === 0) n = 'FECHA';
+    if (!(n in cols)) cols[n] = c;
+  });
+  // Encabezado de egresos.
+  var he = -1;
+  for (i = hv + 1; i < filas.length && he < 0; i++){
+    if ((filas[i] || []).some(function(x){ return norm(x).indexOf('EGRESOS') >= 0; })) he = i;
+  }
+  var fin = he >= 0 ? he - 1 : Math.min(120, filas.length);
+  var fechas = [];
+  function celda(r, k){ return (k in cols) ? r[cols[k]] : null; }
+  for (i = hv + 1; i < fin; i++){
+    r = filas[i] || [];
+    var cat = texto(celda(r,'CATEGORIA')), prod = texto(celda(r,'PRODUCTO'));
+    if (norm(cat).indexOf('INVENTARIO') >= 0) break;
+    var monto = numero(celda(r,'MONTO'));
+    var metodo = crudo(celda(r,'METODO'));
+    if (!cat && !prod && monto === null) continue;
+    var f = aFecha(celda(r,'FECHA'));
+    if (f) fechas.push(f);
+    hoja.cobros.push({
+      fila:i + 1, fecha:f ? iso(f) : null, categoria:cat, producto:prod, pago:texto(celda(r,'PAGO')),
+      metodo:metodo, cuenta:texto(celda(r,'CUENTA')), monto:monto, remision:texto(celda(r,'REMISION')),
+      factura:texto(celda(r,'FACTURA')), vendedor:texto(celda(r,'VENDEDOR')), nota:texto(celda(r,'DESCRIPCION'))
+    });
+  }
+  if (he >= 0){
+    var ce = {}, cEgr = -1;
+    (filas[he] || []).forEach(function(x, c){ if (norm(x).indexOf('EGRESOS') >= 0 && cEgr < 0) cEgr = c; });
+    (filas[he] || []).forEach(function(x, c){
+      var n = norm(x);
+      if (!n || c < cEgr - 1) return;
+      if (n.indexOf('FECHA') === 0) n = 'FECHA';
+      if (n.indexOf('EGRESOS') >= 0) n = 'TIPO';
+      if (!(n in ce)) ce[n] = c;
+    });
+    for (i = he + 1; i < filas.length; i++){
+      r = filas[i] || [];
+      if (r.some(function(x){ var n = norm(x); return n.indexOf('ENTRADAS / SALIDAS') >= 0 || n.indexOf('ENTRADAS/SALIDAS') >= 0; })) break;
+      var tipo = crudo(r[ce.TIPO]), m2 = numero(r[ce.MONTO]);
+      if (!m2) continue;
+      var f2 = aFecha(r[ce.FECHA]);
+      if (f2) fechas.push(f2);
+      hoja.egresos.push({fila:i + 1, fecha:f2 ? iso(f2) : null, tipo:tipo, descripcion:texto(r[ce.DESCRIPCION]), monto:m2});
+    }
+  }
+  // La semana es el lunes que mas se repite en las fechas de la pestaña.
+  var cuenta = {};
+  fechas.forEach(function(f){ var l = lunesDe(f); cuenta[l] = (cuenta[l] || 0) + 1; });
+  var mejor = null;
+  Object.keys(cuenta).forEach(function(l){ if (!mejor || cuenta[l] > cuenta[mejor]) mejor = l; });
+  hoja.lunes = mejor;
+  return hoja;
+}
+
+// Lee un archivo completo. Solo revisa las ultimas pestañas, que son las semanas recientes.
+function leerLibro(nombreArchivo, datos){
+  var suc = sucursalDeArchivo(nombreArchivo);
+  if (!suc) return {archivo:nombreArchivo, error:'No reconozco la sucursal en el nombre del archivo'};
+  var nombres = XLSX.read(datos, {type:'array', bookSheets:true}).SheetNames
+    .filter(function(n){ return !/^\s*(hoja|copia)/i.test(n); });
+  var candidatas = nombres.slice(-12);
+  var libro = XLSX.read(datos, {type:'array', cellDates:true, sheets:candidatas, sheetRows:400});
+  var hojas = [];
+  candidatas.forEach(function(n){
+    var filas = XLSX.utils.sheet_to_json(libro.Sheets[n], {header:1, raw:true, defval:null});
+    var h = leerHoja(n, filas);
+    if (h) hojas.push(h);
+  });
+  // Pestañas sin fechas (o con fechas viejas copiadas) van una semana despues de la anterior.
+  for (var i = 0; i < hojas.length; i++){
+    var prev = i > 0 ? hojas[i-1].lunes : null;
+    if (prev && (!hojas[i].lunes || hojas[i].lunes <= prev)) hojas[i].lunes = sumarDias(prev, 7);
+  }
+  hojas = hojas.filter(function(h){ return h.lunes && h.lunes >= INICIO; });
+  return {sucursal:suc, archivo:nombreArchivo, hojas:hojas};
+}
+
+function clasificarCobro(c){
+  var cat = norm(c.categoria), prod = norm(c.producto), pago = norm(c.pago);
+  var met = aCatalogo(c.metodo, METODOS, ALIAS_METODO);
+  var t;
+  if ((cat + ' ' + prod).indexOf('CANCELAD') >= 0) t = 'cancelada';
+  else if ((cat + ' ' + prod).indexOf('SALIDA') >= 0 && (cat + ' ' + prod).indexOf('MERCANC') >= 0) t = 'inventario';
+  else if (!c.monto) t = c.metodo || c.pago ? 'sinmonto' : 'inventario';
+  else if (met.valor === 'PRESTAMO' || cat.indexOf('PRESTAMO') >= 0 || prod.indexOf('PRESTAMO') >= 0) t = 'prestamo';
+  else if (cat.indexOf('FLETE') === 0) t = 'flete';
+  else if (pago.indexOf('ANTICIPO') === 0) t = 'anticipo';
+  else if (pago.indexOf('LIQUIDA') === 0) t = 'liquidacion';
+  else if (pago.indexOf('ABONO') === 0) t = 'abono';
+  else t = 'contado';
+  return {tipo:t, metodo:met};
+}
+
+// Recalcula todo a partir de lo leido: caja por semana, cobros, egresos y lo que hay que revisar.
+function calcular(datos){
+  var semanas = {}, porSuc = {};
+  Object.keys(datos.sucursales).forEach(function(suc){
+    datos.sucursales[suc].hojas.forEach(function(h){ semanas[h.lunes] = true; });
+  });
+  var listaSem = Object.keys(semanas).sort();
+  Object.keys(datos.sucursales).sort().forEach(function(suc){
+    var hojas = datos.sucursales[suc].hojas;
+    if (!hojas.length) return;
+    var res = {sucursal:suc, nombre:SUCURSALES[suc] || suc, semanas:{}, problemas:[]};
+    var caja = null, difPrev = 0, totalPrev = null;
+    hojas.forEach(function(h, idx){
+      var s = {lunes:h.lunes, hoja:h.nombre, anterior:null, efectivo:0, salidas:{}, totalSalidas:0,
+        caja:0, dice:h.total, cobros:[], egresos:[], apartados:[], porMetodo:{}, hayDatos:false};
+      s.anterior = caja === null ? (h.anterior || 0) : caja;
+      function prob(o){ o.lunes = h.lunes; o.hoja = h.nombre; res.problemas.push(o); }
+      if (idx > 0 && totalPrev !== null && h.anterior !== null && Math.abs(h.anterior - totalPrev) >= 1)
+        prob({texto:'El saldo anterior no coincide con el Total Reporte de la semana pasada', monto:h.anterior - totalPrev});
+      h.cobros.forEach(function(c){
+        var k = clasificarCobro(c);
+        var o = Object.assign({}, c, {tipo:k.tipo, metodoN:k.metodo.valor});
+        if (k.tipo === 'sinmonto') return;
+        if (k.tipo === 'inventario' || k.tipo === 'cancelada'){ s.apartados.push(o); return; }
+        s.hayDatos = true;
+        s.cobros.push(o);
+        var m = k.metodo.valor || 'SIN';
+        s.porMetodo[m] = (s.porMetodo[m] || 0) + c.monto;
+        if (k.metodo.valor === 'EFECTIVO' || k.metodo.valor === 'PRESTAMO') s.efectivo += c.monto;
+        if (k.metodo.corregido)
+          prob({texto:textoCorregido('Método', k.metodo), detalle:'El Excel no lo suma; aquí cuenta como ' + NOMBRE_METODO[k.metodo.valor], fila:c.fila, monto:c.monto});
+        else if (!k.metodo.valor && k.metodo.original)
+          prob({texto:'Método “' + k.metodo.original + '” no reconocido', detalle:'No se cuenta en ningún método', fila:c.fila, monto:c.monto});
+        else if (!k.metodo.valor)
+          prob({texto:'Cobro sin método de pago', detalle:c.producto || c.categoria, fila:c.fila, monto:c.monto});
+      });
+      h.egresos.forEach(function(e){
+        var k = aCatalogo(e.tipo, TIPOS_EGRESO, ALIAS_EGRESO);
+        var t = k.valor || 'SIN';
+        s.hayDatos = true;
+        s.egresos.push(Object.assign({}, e, {tipoN:t}));
+        s.salidas[t] = (s.salidas[t] || 0) + e.monto;
+        s.totalSalidas += e.monto;
+        if (k.corregido) prob({texto:textoCorregido('Egreso', k), detalle:'El Excel no lo resta; aquí cuenta como ' + NOMBRE_EGRESO[k.valor], fila:e.fila, monto:e.monto});
+        else if (!k.valor) prob({texto:k.original ? 'Tipo de egreso “' + k.original + '” no reconocido' : 'Egreso sin tipo', detalle:e.descripcion, fila:e.fila, monto:e.monto});
+      });
+      s.caja = s.anterior + s.efectivo - s.totalSalidas;
+      if (h.total !== null){
+        var dif = s.caja - h.total;
+        if (Math.abs(dif - difPrev) >= 1)
+          prob({texto:'La sucursal reporta ' + dinero(h.total) + ' en caja; aquí da ' + dinero(s.caja), monto:dif, diferencia:true});
+        difPrev = dif;
+      }
+      totalPrev = h.total;
+      caja = s.caja;
+      res.semanas[h.lunes] = s;
+    });
+    porSuc[suc] = res;
+  });
+  return {semanas:listaSem, sucursales:porSuc};
+}
+
+function dinero(n){
+  if (n === null || n === undefined) return '—';
+  var s = Math.round(Math.abs(n)).toLocaleString('es-MX');
+  return (n < -0.5 ? '−$' : '$') + s;
+}
+
+if (typeof module !== 'undefined') module.exports = {leerLibro:leerLibro, calcular:calcular, clasificarCobro:clasificarCobro};
+</script>
+
+<script>
+var CLAVE = 'bma.reportes.v1';
+var datos = null;        // lo leido de los Excel: {leido, sucursales:{AGS:{archivo,hojas}}}
+var calc = null;         // resultado de calcular(datos)
+var semanaSel = null;
+var moduloSel = 'caja';
+var sucFiltro = 'todas';
+var abiertas = {};
+var verApartados = false;
+
+var MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function fechaCorta(isoStr){ if (!isoStr) return ''; var p = isoStr.split('-'); return (+p[2]) + ' ' + MESES[+p[1] - 1]; }
+function etiquetaSemana(lunes){
+  var fin = sumarDias(lunes, 5), a = lunes.split('-'), b = fin.split('-');
+  return a[1] === b[1] ? (+a[2]) + ' – ' + fechaCorta(fin) : fechaCorta(lunes) + ' – ' + fechaCorta(fin);
+}
+function esc(s){ return String(s === null || s === undefined ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+function guardar(){ try { localStorage.setItem(CLAVE, JSON.stringify(datos)); } catch(e){} }
+function cargarGuardado(){
+  try { var t = localStorage.getItem(CLAVE); if (t) return JSON.parse(t); } catch(e){}
+  return null;
+}
+
+function escogerArchivos(){ document.getElementById('archivos').click(); }
+
+function leerArchivos(lista){
+  var archivos = Array.prototype.slice.call(lista || []);
+  if (!archivos.length) return;
+  var botones = [document.getElementById('btn-escoger'), document.getElementById('btn-actualizar')];
+  var textos = botones.map(function(b){ return b.textContent; });
+  var err = document.getElementById('error-inicio');
+  err.hidden = true;
+  var nuevos = {leido:new Date().toISOString(), sucursales:{}};
+  var omitidos = [];
+  botones.forEach(function(b){ b.disabled = true; });
+  var i = 0;
+  function siguiente(){
+    if (i >= archivos.length) return terminar();
+    var f = archivos[i++];
+    var suc = sucursalDeArchivo(f.name);
+    botones.forEach(function(b){ b.textContent = 'Leyendo ' + (SUCURSALES[suc] || f.name) + '…'; });
+    f.arrayBuffer().then(function(buf){
+      setTimeout(function(){
+        try {
+          var r = leerLibro(f.name, new Uint8Array(buf));
+          if (r.error || !r.hojas.length) omitidos.push(f.name);
+          else nuevos.sucursales[r.sucursal] = {archivo:r.archivo, hojas:r.hojas};
+        } catch(e){ omitidos.push(f.name); }
+        siguiente();
+      }, 20);
+    });
+  }
+  function terminar(){
+    botones.forEach(function(b, k){ b.disabled = false; b.textContent = textos[k]; });
+    document.getElementById('archivos').value = '';
+    if (!Object.keys(nuevos.sucursales).length){
+      err.textContent = 'No encontré semanas desde el 5 de octubre en esos archivos.';
+      err.hidden = false;
+      return;
+    }
+    // Actualizar reemplaza solo las sucursales que se escogieron.
+    if (datos) Object.keys(datos.sucursales).forEach(function(s){ if (!nuevos.sucursales[s]) nuevos.sucursales[s] = datos.sucursales[s]; });
+    datos = nuevos;
+    guardar();
+    semanaSel = null;
+    iniciar();
+  }
+  siguiente();
+}
+
+function iniciar(){
+  calc = calcular(datos);
+  if (!semanaSel || calc.semanas.indexOf(semanaSel) < 0) semanaSel = semanaReciente();
+  document.getElementById('inicio').hidden = true;
+  ['semana','tabs','btn-actualizar'].forEach(function(id){ document.getElementById(id).hidden = false; });
+  render();
+}
+
+// La semana mas reciente en la que alguna sucursal ya capturo algo.
+function semanaReciente(){
+  for (var i = calc.semanas.length - 1; i >= 0; i--){
+    var l = calc.semanas[i];
+    var hay = Object.keys(calc.sucursales).some(function(s){ var x = calc.sucursales[s].semanas[l]; return x && x.hayDatos; });
+    if (hay) return l;
+  }
+  return calc.semanas[calc.semanas.length - 1];
+}
+
+function moverSemana(d){
+  var i = calc.semanas.indexOf(semanaSel) + d;
+  if (i < 0 || i >= calc.semanas.length) return;
+  semanaSel = calc.semanas[i];
+  render();
 }
 
 function selModulo(mod){
   moduloSel = mod;
-  document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('on', t.dataset.mod===mod); });
-  document.querySelectorAll('.modulo').forEach(function(m){ m.classList.toggle('on', m.id==='mod-'+mod); });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('on', t.dataset.mod === mod); });
+  render();
+}
+function selSucursal(s){ sucFiltro = s; render(); }
+function alternar(s){ abiertas[s] = !abiertas[s]; renderCaja(); }
+function alternarApartados(){ verApartados = !verApartados; render(); }
+
+// Caja de una sucursal en la semana elegida; si no subio esa semana, arrastra la ultima que tenga.
+function cajaEn(res, lunes){
+  if (res.semanas[lunes]) return {s:res.semanas[lunes], arrastrada:false};
+  var previas = Object.keys(res.semanas).filter(function(l){ return l < lunes; }).sort();
+  return previas.length ? {s:res.semanas[previas[previas.length - 1]], arrastrada:true} : null;
+}
+function nivel(monto){ return monto > LIMITE_GRAVE ? 'muy-alto' : monto > LIMITE_CAJA ? 'alto' : ''; }
+
+function render(){
+  document.getElementById('sem-lbl').textContent = etiquetaSemana(semanaSel);
+  var i = calc.semanas.indexOf(semanaSel);
+  document.getElementById('sem-ant').disabled = i <= 0;
+  document.getElementById('sem-sig').disabled = i >= calc.semanas.length - 1;
+  document.querySelectorAll('.modulo').forEach(function(m){ m.classList.toggle('on', m.id === 'mod-' + moduloSel); });
+  var n = problemasSemana().length;
+  var cr = document.getElementById('cuenta-revisar');
+  cr.hidden = !n; cr.textContent = n;
+  if (moduloSel === 'caja') renderCaja();
+  if (moduloSel === 'cobros') renderCobros();
+  if (moduloSel === 'gastos') renderGastos();
+  if (moduloSel === 'revisar') renderRevisar();
 }
 
-renderEmpresas();
+function renderCaja(){
+  var filas = Object.keys(calc.sucursales).map(function(s){
+    var res = calc.sucursales[s], c = cajaEn(res, semanaSel);
+    return c ? {res:res, s:c.s, arrastrada:c.arrastrada} : null;
+  }).filter(Boolean).sort(function(a, b){ return b.s.caja - a.s.caja; });
+  var arriba = filas.filter(function(f){ return f.s.caja > LIMITE_CAJA; }).length;
+  var h = '<h2>' + (arriba === 0 ? 'Todas las cajas están en $10,000 o menos'
+    : arriba === 1 ? '1 caja pasa de $10,000' : arriba + ' cajas pasan de $10,000') + '</h2>';
+  h += '<div class="lista">';
+  filas.forEach(function(f){
+    var s = f.s, code = f.res.sucursal, nv = nivel(s.caja);
+    var nota = f.arrastrada ? 'Sin reporte esta semana'
+      : (s.dice !== null && Math.abs(s.caja - s.dice) >= 1) ? 'La sucursal reporta ' + dinero(s.dice) : '';
+    h += '<div class="suc ' + nv + (abiertas[code] ? ' abierta' : '') + '">';
+    h += '<button class="suc-fila" onclick="alternar(\'' + code + '\')" aria-expanded="' + !!abiertas[code] + '">';
+    h += '<svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
+    h += '<span class="suc-izq"><span class="suc-nombre">' + esc(f.res.nombre) + '</span>' + (nota ? '<span class="suc-nota" style="display:block">' + esc(nota) + '</span>' : '') + '</span>';
+    h += '<span><span class="suc-monto num">' + dinero(s.caja) + '</span>' + (nv ? '<span class="exceso num">+' + dinero(s.caja - LIMITE_CAJA) + '</span>' : '') + '</span>';
+    h += '</button>';
+    h += '<div class="detalle">' + detalleCaja(f.res, s, f.arrastrada) + '</div></div>';
+  });
+  h += '</div>';
+  document.getElementById('mod-caja').innerHTML = h;
+}
+
+function detalleCaja(res, s, arrastrada){
+  var h = '<div class="cuentas-caja">';
+  if (arrastrada) h += '<div class="subt">Última semana con reporte: ' + etiquetaSemana(s.lunes) + '</div>';
+  h += '<div class="linea"><span>Semana anterior</span><span class="num">' + dinero(s.anterior) + '</span></div>';
+  h += '<div class="linea"><span>Entró en efectivo</span><span class="num">+' + dinero(s.efectivo).slice(1) + '</span></div>';
+  Object.keys(s.salidas).sort(function(a, b){ return s.salidas[b] - s.salidas[a]; }).forEach(function(t){
+    h += '<div class="linea"><span>' + (NOMBRE_EGRESO[t] || 'Sin tipo') + '</span><span class="num">' + dinero(-s.salidas[t]) + '</span></div>';
+  });
+  h += '<div class="linea total"><span>Queda en caja</span><span class="num">' + dinero(s.caja) + '</span></div>';
+  if (s.dice !== null && Math.abs(s.caja - s.dice) >= 1)
+    h += '<div class="linea dice"><span>La sucursal reporta</span><span class="num">' + dinero(s.dice) + '</span></div>';
+  h += '</div><div class="historia"><div class="subt">Por semana</div>';
+  Object.keys(res.semanas).sort().reverse().forEach(function(l){
+    var x = res.semanas[l];
+    h += '<div class="linea' + (x.caja > LIMITE_CAJA ? ' alto' : '') + (l === s.lunes ? ' actual' : '') + '"><span>' + etiquetaSemana(l) + '</span><span class="num">' + dinero(x.caja) + '</span></div>';
+  });
+  return h + '</div>';
+}
+
+function chipsSucursales(){
+  var h = '<div class="chips"><button class="chip' + (sucFiltro === 'todas' ? ' on' : '') + '" onclick="selSucursal(\'todas\')">Todas</button>';
+  Object.keys(calc.sucursales).forEach(function(s){
+    h += '<button class="chip' + (sucFiltro === s ? ' on' : '') + '" onclick="selSucursal(\'' + s + '\')">' + esc(calc.sucursales[s].nombre) + '</button>';
+  });
+  return h + '</div>';
+}
+function semanasFiltradas(){
+  return Object.keys(calc.sucursales).filter(function(s){ return sucFiltro === 'todas' || s === sucFiltro; })
+    .map(function(s){ return {res:calc.sucursales[s], s:calc.sucursales[s].semanas[semanaSel]}; })
+    .filter(function(x){ return x.s; });
+}
+function ordenFecha(a, b){ return (a.fecha || '9').localeCompare(b.fecha || '9') || a.fila - b.fila; }
+
+function renderCobros(){
+  var lista = [], apartados = [], porMet = {};
+  semanasFiltradas().forEach(function(x){
+    x.s.cobros.forEach(function(c){ lista.push(Object.assign({suc:x.res.nombre}, c)); });
+    x.s.apartados.forEach(function(c){ apartados.push(Object.assign({suc:x.res.nombre}, c)); });
+    Object.keys(x.s.porMetodo).forEach(function(m){ porMet[m] = (porMet[m] || 0) + x.s.porMetodo[m]; });
+  });
+  lista.sort(ordenFecha);
+  var total = lista.reduce(function(a, c){ return a + c.monto; }, 0);
+  var h = '<h2>Cobros por <span class="num">' + dinero(total) + '</span></h2>' + chipsSucursales();
+  h += '<div class="totales">';
+  METODOS.concat(['SIN']).forEach(function(m){
+    if (!porMet[m] && ['EFECTIVO','TRANSFERENCIA','TARJETA','DEPOSITO'].indexOf(m) < 0) return;
+    h += '<div class="tot"><span class="t-lbl">' + (m === 'SIN' ? 'Sin método' : NOMBRE_METODO[m]) + '</span><span class="num">' + dinero(porMet[m] || 0) + '</span></div>';
+  });
+  h += '</div>';
+  h += tablaCobros(lista, sucFiltro === 'todas');
+  if (apartados.length){
+    h += '<button class="mas" onclick="alternarApartados()">' + (verApartados ? 'Ocultar' : 'Ver') + ' ' + apartados.length + (apartados.length === 1 ? ' movimiento' : ' movimientos') + ' sin dinero</button>';
+    if (verApartados) h += '<div style="margin-top:12px">' + tablaCobros(apartados.sort(ordenFecha), sucFiltro === 'todas') + '</div>';
+  }
+  document.getElementById('mod-cobros').innerHTML = h;
+}
+function tablaCobros(lista, conSuc){
+  if (!lista.length) return '<div class="tabla-wrap"><div class="vacio-chico">Sin cobros esta semana.</div></div>';
+  var h = '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th>' + (conSuc ? '<th>Sucursal</th>' : '') +
+    '<th>Concepto</th><th>Tipo</th><th>Método</th><th class="der">Monto</th></tr></thead><tbody>';
+  lista.forEach(function(c){
+    var marca = c.tipo !== 'contado';
+    h += '<tr><td class="num">' + fechaCorta(c.fecha) + '</td>' + (conSuc ? '<td>' + esc(c.suc) + '</td>' : '') +
+      '<td class="concepto">' + esc(c.producto || c.categoria) + (c.producto && c.categoria ? '<span class="secundario">' + esc(c.categoria) + '</span>' : '') + '</td>' +
+      '<td><span class="etq' + (marca ? ' marca' : '') + '">' + NOMBRE_TIPO[c.tipo] + '</span></td>' +
+      '<td>' + (c.metodoN ? NOMBRE_METODO[c.metodoN] : '<span class="secundario">—</span>') + '</td>' +
+      '<td class="der num">' + (c.monto ? dinero(c.monto) : '') + '</td></tr>';
+  });
+  return h + '</tbody></table></div>';
+}
+
+function renderGastos(){
+  var lista = [], porTipo = {};
+  semanasFiltradas().forEach(function(x){
+    x.s.egresos.forEach(function(e){ lista.push(Object.assign({suc:x.res.nombre}, e)); porTipo[e.tipoN] = (porTipo[e.tipoN] || 0) + e.monto; });
+  });
+  lista.sort(ordenFecha);
+  // Depositos y prestamos salen de la caja pero no son gasto.
+  var noGasto = {DEPOSITO:true, PRESTAMO:true};
+  var gasto = 0;
+  Object.keys(porTipo).forEach(function(t){ if (!noGasto[t]) gasto += porTipo[t]; });
+  var h = '<h2>Gastos por <span class="num">' + dinero(gasto) + '</span></h2>' + chipsSucursales();
+  h += '<div class="totales">';
+  ['NOMINA','GASTOS','COMISIONES'].forEach(function(t){
+    h += '<div class="tot"><span class="t-lbl">' + {NOMINA:'Nómina', GASTOS:'Gastos', COMISIONES:'Comisiones'}[t] + '</span><span class="num">' + dinero(porTipo[t] || 0) + '</span></div>';
+  });
+  var otros = gasto - (porTipo.NOMINA || 0) - (porTipo.GASTOS || 0) - (porTipo.COMISIONES || 0);
+  if (otros) h += '<div class="tot"><span class="t-lbl">Otros</span><span class="num">' + dinero(otros) + '</span></div>';
+  h += '<div class="tot aparte"><span class="t-lbl">Depósitos al banco</span><span class="num">' + dinero(porTipo.DEPOSITO || 0) + '</span></div>';
+  if (porTipo.PRESTAMO) h += '<div class="tot aparte"><span class="t-lbl">Préstamos a empleados</span><span class="num">' + dinero(porTipo.PRESTAMO) + '</span></div>';
+  h += '</div>';
+  if (!lista.length) h += '<div class="tabla-wrap"><div class="vacio-chico">Sin egresos esta semana.</div></div>';
+  else {
+    var conSuc = sucFiltro === 'todas';
+    h += '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th>' + (conSuc ? '<th>Sucursal</th>' : '') + '<th>Concepto</th><th>Tipo</th><th class="der">Monto</th></tr></thead><tbody>';
+    lista.forEach(function(e){
+      h += '<tr><td class="num">' + fechaCorta(e.fecha) + '</td>' + (conSuc ? '<td>' + esc(e.suc) + '</td>' : '') +
+        '<td class="concepto">' + esc(e.descripcion) + '</td><td><span class="etq' + (noGasto[e.tipoN] ? '' : ' marca') + '">' + (NOMBRE_EGRESO[e.tipoN] || 'Sin tipo') + '</span></td>' +
+        '<td class="der num">' + dinero(e.monto) + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+  }
+  document.getElementById('mod-gastos').innerHTML = h;
+}
+
+function problemasSemana(){
+  var out = [];
+  Object.keys(calc.sucursales).forEach(function(s){
+    calc.sucursales[s].problemas.forEach(function(p){ if (p.lunes === semanaSel) out.push(Object.assign({suc:calc.sucursales[s].nombre}, p)); });
+  });
+  return out;
+}
+function renderRevisar(){
+  var ps = problemasSemana();
+  var h = '<h2>' + (ps.length ? (ps.length === 1 ? '1 cosa por revisar' : ps.length + ' cosas por revisar') : 'Todo cuadra esta semana') + '</h2>';
+  var grupos = {};
+  ps.forEach(function(p){ (grupos[p.suc] = grupos[p.suc] || []).push(p); });
+  Object.keys(grupos).forEach(function(g){
+    h += '<div class="grupo"><h3>' + esc(g) + '</h3><div class="lista">';
+    grupos[g].forEach(function(p){
+      h += '<div class="prob"><div><div class="prob-txt">' + esc(p.texto) + '</div><div class="prob-donde">' +
+        (p.detalle ? esc(p.detalle) + ' · ' : '') + 'Pestaña «' + esc(p.hoja.trim()) + '»' + (p.fila ? ' · fila ' + p.fila : '') + '</div></div>' +
+        '<span class="num">' + (p.diferencia ? (p.monto > 0 ? '+' : '') + dinero(p.monto) : dinero(p.monto)) + '</span></div>';
+    });
+    h += '</div></div>';
+  });
+  document.getElementById('mod-revisar').innerHTML = h;
+}
+
+datos = cargarGuardado();
+if (datos && datos.sucursales && Object.keys(datos.sucursales).length) iniciar();
 </script>
 </body>
 </html>

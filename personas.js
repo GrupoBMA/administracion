@@ -3,7 +3,7 @@
 (function () {
   var esc = BMA.esc, $ = function (id) { return document.getElementById(id); };
   var TIPOS = [{valor: 'cliente', nombre: 'Cliente'}, {valor: 'empleado', nombre: 'Empleado'}, {valor: 'vendedor', nombre: 'Vendedor'}];
-  var st = {q: '', tipo: null, ficha: null, tiempo: null};
+  var st = {q: '', tipo: null, quitadas: false, ficha: null, tiempo: null};
 
   function cont() { return $('mod-personas'); }
   function tiposTxt(t) { return (t || []).map(function (x) { return BMA.nombreDe(TIPOS, x); }).join(', '); }
@@ -13,6 +13,7 @@
     cont().innerHTML =
       '<div class="barra"><input class="campo-buscar" id="p-q" type="search" placeholder="Buscar por nombre o número" aria-label="Buscar persona">' +
       '<button class="filtro" id="p-tipo">Tipo: <b>' + esc(st.tipo ? BMA.nombreDe(TIPOS, st.tipo) : 'Todos') + '</b></button>' +
+      '<button class="filtro" id="p-ver">Ver: <b>' + (st.quitadas ? 'Quitadas' : 'En las listas') + '</b></button>' +
       '<button class="btn" id="p-nueva">Nueva persona</button></div><div id="p-lista" class="renglones"><p class="vacio">Cargando…</p></div>';
     var q = $('p-q'); q.value = st.q;
     q.oninput = function () { clearTimeout(st.tiempo); st.tiempo = setTimeout(function () { st.q = q.value; lista(); }, 300); };
@@ -20,13 +21,19 @@
       UI.abrirLista({titulo: 'Tipo', elegido: st.tipo || '', grupos: [{opciones: [{valor: '', nombre: 'Todos'}].concat(TIPOS)}]})
         .then(function (v) { if (v === null) return; st.tipo = v || null; pintar(); });
     };
+    $('p-ver').onclick = function () {
+      UI.abrirLista({titulo: 'Ver', elegido: st.quitadas ? 'q' : 'a', grupos: [{opciones: [
+        {valor: 'a', nombre: 'En las listas'}, {valor: 'q', nombre: 'Quitadas', detalle: 'Las que alguien quitó de las listas'}]}]})
+        .then(function (v) { if (v === null) return; st.quitadas = v === 'q'; pintar(); });
+    };
     $('p-nueva').onclick = function () { nueva().then(function (p) { if (p) { st.ficha = p.id; pintar(); } }); };
     lista();
   }
 
   function lista() {
-    UI.llamar('bma_personas_buscar', {p_q: st.q, p_tipo: st.tipo}).then(function (ps) {
+    UI.llamar('bma_personas_buscar', {p_q: st.q, p_tipo: st.tipo, p_incluir_ocultas: st.quitadas}).then(function (ps) {
       var el = $('p-lista'); if (!el) return;
+      if (st.quitadas) ps = ps.filter(function (p) { return p.activa === false; });
       if (!ps.length) { el.innerHTML = '<p class="vacio">No hay personas con esa búsqueda.</p>'; return; }
       el.innerHTML = ps.map(function (p) {
         var cuenta = [p.ventas ? p.ventas + ' compra' + (p.ventas > 1 ? 's' : '') : '', p.vendidas ? p.vendidas + ' vendida' + (p.vendidas > 1 ? 's' : '') : '']
@@ -55,14 +62,21 @@
           (conSaldo && s ? ' · saldo ' + BMA.dinero(s) : '') + '</span></button>';
       };
       cont().innerHTML = '<div class="ficha-top"><button class="volver" id="p-volver">← Personas</button></div><div class="ficha">' +
-        '<h2>' + esc(p.nombre) + '</h2><div class="sub">Número ' + esc(p.numero) + '</div><div class="datos">' +
+        '<h2>' + esc(p.nombre) + '</h2><div class="sub">Número ' + esc(p.numero) + (p.activa ? '' : ' · <span class="chip-estado cancelada">Quitada de las listas</span>') + '</div><div class="datos">' +
         dato('nombre', 'Nombre', p.nombre) + dato('tipos', 'Es', tiposTxt(p.tipos)) + dato('telefono', 'Teléfono', p.telefono) +
         dato('sucursal', 'Sucursal', p.sucursal ? BMA.nombreDe(BMA.SUCURSALES, p.sucursal) : '') + dato('notas', 'Notas', p.notas) + '</div>' +
+        '<div class="btn-fila"><button class="btn" id="p-quitar">' + (p.activa ? 'Quitar de las listas' : 'Volver a poner en las listas') + '</button></div>' +
         (r.compras.length ? '<div class="seccion">Compras</div><div class="renglones">' + r.compras.map(function (v) { return ventaRen(v, true); }).join('') + '</div>' : '') +
         (r.vendidas.length ? '<div class="seccion">Vendió · ' + r.vendidas.length + (r.vendidas.length === 300 ? '+' : '') + '</div><div class="renglones">' +
           r.vendidas.map(function (v) { return ventaRen(v, false); }).join('') + '</div>' : '') +
         (r.cambios.length ? '<div class="seccion">Cambios</div>' + r.cambios.map(cambio).join('') : '') + '</div>';
       $('p-volver').onclick = function () { st.ficha = null; pintar(); };
+      $('p-quitar').onclick = function () {
+        UI.guardar('bma_persona_quitar', {p_id: p.id, p_quitar: p.activa}).then(function (r) {
+          if (r === null) return;
+          UI.olvidarPersonas(); UI.aviso(p.activa ? 'Ya no sale en las listas' : 'Otra vez en las listas'); abrir(p.id);
+        }).catch(function () {});
+      };
       cont().querySelector('.ficha').onclick = function (e) {
         var v = e.target.closest('[data-venta]');
         if (v && window.Ventas && Ventas.abrir) { selModulo('ventas'); Ventas.abrir(v.dataset.venta); return; }
@@ -111,7 +125,7 @@
       return UI.guardar('bma_persona_guardar', {p: p});
     }).then(function (id) {
       if (!id) return null;
-      UI.aviso('Persona dada de alta');
+      UI.aviso('Persona dada de alta'); UI.olvidarPersonas();
       return {id: id, nombre: p.nombre};
     }).catch(function () { return null; });
   }

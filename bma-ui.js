@@ -179,6 +179,102 @@
     return paso.then(function (ok) { return ok ? llamar(nombre, args) : null; });
   }
 
-  window.UI = {abrirLista: abrirLista, escogerVarios: escogerVarios, pedirTexto: pedirTexto, pedirMonto: pedirMonto,
+  // ---------- Lista desplegable de personas (como en GVF) ----------
+  // UI.combo(contenedor, {tipo, placeholder, valor:{id,nombre}|null, alCambiar(persona|null)})
+  // Escribir filtra; cada renglón tiene × para quitarlo de la lista; al final "+ Agregar …" lo da de alta ahí mismo.
+  var TIPO_NOMBRE = {cliente: 'cliente', vendedor: 'vendedor', empleado: 'empleado'};
+  var cachePersonas = {};
+  function personasDe(tipo, q) {
+    if (!q && cachePersonas[tipo]) return Promise.resolve(cachePersonas[tipo]);
+    return llamar('bma_personas_buscar', {p_q: q || '', p_tipo: tipo}).then(function (ps) {
+      if (!q) cachePersonas[tipo] = ps;
+      return ps;
+    });
+  }
+  function olvidarPersonas() { cachePersonas = {}; }
+
+  function combo(cont, o) {
+    var elegido = o.valor || null, abierta = false, filas = [], marca = -1, tiempo = null;
+    cont.innerHTML = '<div class="combo"><input class="campo" type="text" autocomplete="off" spellcheck="false" role="combobox"' +
+      ' aria-expanded="false" aria-autocomplete="list" placeholder="' + esc(o.placeholder || 'Escribe para buscar') + '">' +
+      '<div class="combo-lista" role="listbox" hidden></div></div>';
+    var inp = cont.querySelector('input'), lista = cont.querySelector('.combo-lista');
+    inp.value = elegido ? elegido.nombre : '';
+
+    function cerrar() { abierta = false; lista.hidden = true; inp.setAttribute('aria-expanded', 'false'); }
+    function elegir(p) {
+      elegido = p; inp.value = p ? p.nombre : ''; cerrar();
+      if (o.alCambiar) o.alCambiar(p);
+    }
+    function pintar() {
+      var txt = inp.value.trim();
+      personasDe(o.tipo, null).then(function (todas) {
+        var lleno = todas.length >= 300;
+        return lleno && txt ? personasDe(o.tipo, txt) : todas;
+      }).then(function (ps) {
+        var q = txt.toLowerCase();
+        filas = ps.filter(function (p) { return !q || p.nombre.toLowerCase().indexOf(q) >= 0 || String(p.numero) === q; });
+        marca = filas.length ? 0 : -1;
+        lista.innerHTML = (filas.length ? filas.map(function (p, i) {
+          return '<div class="combo-fila' + (i === marca ? ' marca' : '') + '" role="option" data-i="' + i + '">' +
+            '<span class="combo-nom">' + esc(p.nombre) + '</span><span class="combo-num num">' + esc(p.numero) + '</span>' +
+            '<button type="button" class="combo-x" data-quitar="' + i + '" aria-label="Quitar a ' + esc(p.nombre) + ' de la lista">×</button></div>';
+        }).join('') : '<div class="combo-vacio">' + (txt ? 'No hay nadie con "' + esc(txt) + '"' : 'Aún no hay nadie en la lista') + '</div>') +
+          '<div class="combo-agregar" data-agregar>+ Agregar ' + (txt ? '"' + esc(txt) + '"' : TIPO_NOMBRE[o.tipo] || 'persona') + '</div>';
+        lista.hidden = false; abierta = true; inp.setAttribute('aria-expanded', 'true');
+      }).catch(function () {});
+    }
+    function mover(d) {
+      if (!filas.length) return;
+      marca = (marca + d + filas.length) % filas.length;
+      lista.querySelectorAll('.combo-fila').forEach(function (f, i) { f.classList.toggle('marca', i === marca); if (i === marca) f.scrollIntoView({block: 'nearest'}); });
+    }
+    function agregar() {
+      var nombre = inp.value.trim();
+      cerrar();
+      var paso = nombre ? Promise.resolve(nombre) : pedirTexto({titulo: 'Nuevo ' + (TIPO_NOMBRE[o.tipo] || 'registro'), ayuda: 'Nombre completo'});
+      paso.then(function (n) {
+        if (!n) return null;
+        return guardar('bma_persona_guardar', {p: {nombre: n, tipos: [o.tipo]}}).then(function (id) {
+          if (!id) return;
+          olvidarPersonas(); aviso(n + ' agregado a la lista');
+          elegir({id: id, nombre: n});
+        });
+      }).catch(function () {});
+    }
+    function quitar(p) {
+      confirmar({titulo: '¿Quitar a ' + p.nombre + ' de la lista?', ayuda: 'Su historial se queda. Puedes volver a ponerlo en Catálogos.', si: 'Quitar'})
+        .then(function (ok) { return ok ? guardar('bma_persona_quitar', {p_id: p.id, p_quitar: true}) : null; })
+        .then(function (r) {
+          if (r === null) return;
+          olvidarPersonas(); aviso(p.nombre + ' ya no sale en la lista');
+          if (elegido && elegido.id === p.id) elegir(null);
+          inp.focus(); pintar();
+        }).catch(function () {});
+    }
+
+    inp.addEventListener('focus', pintar);
+    inp.addEventListener('click', function () { if (!abierta) pintar(); });
+    inp.addEventListener('input', function () {
+      if (elegido) { elegido = null; if (o.alCambiar) o.alCambiar(null); }
+      clearTimeout(tiempo); tiempo = setTimeout(pintar, 150);
+    });
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); if (!abierta) pintar(); else mover(1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); mover(-1); }
+      else if (e.key === 'Enter') { e.preventDefault(); if (abierta && marca >= 0) elegir(filas[marca]); else if (abierta) agregar(); }
+      else if (e.key === 'Escape') { if (abierta) { e.stopPropagation(); cerrar(); } }
+    });
+    inp.addEventListener('blur', function () { setTimeout(function () { if (!cont.contains(document.activeElement)) cerrar(); }, 150); });
+    lista.addEventListener('mousedown', function (e) {
+      e.preventDefault();          // que el campo no pierda el foco
+      var x = e.target.closest('[data-quitar]'); if (x) { quitar(filas[+x.dataset.quitar]); return; }
+      if (e.target.closest('[data-agregar]')) { agregar(); return; }
+      var f = e.target.closest('[data-i]'); if (f) elegir(filas[+f.dataset.i]);
+    });
+    return {valor: function () { return elegido; }, poner: function (p) { elegido = p; inp.value = p ? p.nombre : ''; }};
+  }
+
+  window.UI = {combo: combo, olvidarPersonas: olvidarPersonas, abrirLista: abrirLista, escogerVarios: escogerVarios, pedirTexto: pedirTexto, pedirMonto: pedirMonto,
                confirmar: confirmar, aviso: aviso, llamar: llamar, guardar: guardar, LOCAL: LOCAL};
 })();

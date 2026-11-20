@@ -29,7 +29,7 @@
       UI.abrirLista({titulo: 'Estado', elegido: st.estado || '', grupos: [{opciones: ESTADOS}]})
         .then(function (v) { if (v === null) return; st.estado = v || ''; pintar(); });
     };
-    $('v-registrar').onclick = function () { if (Ventas.registrar) Ventas.registrar(); };
+    $('v-registrar').onclick = function () { selModulo('registrar'); };
     lista();
   }
 
@@ -102,7 +102,7 @@
         (r.cambios.length ? '<div class="seccion">Cambios</div>' + r.cambios.map(function (c) { return cambio(c, r.nombres); }).join('') : '') +
         '</div>';
       $('v-volver').onclick = function () { st.ficha = null; pintar(); };
-      $('v-agregar').onclick = function () { if (Ventas.agregarMovimiento) Ventas.agregarMovimiento(v); };
+      $('v-agregar').onclick = function () { Registrar.pagoDe(v); };
       cont().querySelector('.ficha').onclick = function (ev) {
         var b = ev.target.closest('[data-campo]'); if (b) { editar(v, b.dataset.campo); return; }
         b = ev.target.closest('[data-corregir]');
@@ -172,126 +172,20 @@
     }).catch(function () {});
   }
 
-  // ---------- Registrar ----------
-  // Cada paso es una hoja; cancelar en cualquiera deja todo sin guardar.
-  var PAGO_INICIAL = [{valor: 'contado', nombre: 'Contado', detalle: 'Se paga completa'},
-                      {valor: 'anticipo', nombre: 'Anticipo', detalle: 'Primer pago; la venta queda abierta'}];
-  function paso(n, de, que) { return 'Paso ' + n + ' de ' + de + ' · ' + que; }
-  function cancelado(v) { return v === null || v === undefined; }
-
-  function frase(m, venta, cliente) {
-    var t = BMA.nombreDe(BMA.TIPOS, m.tipo);
-    var conDinero = BMA.TIPOS.some(function (x) { return x.valor === m.tipo && x.conDinero; });
-    return t + (conDinero ? ' de ' + BMA.dinero(m.monto) + ' en ' + BMA.nombreDe(BMA.METODOS, m.metodo).toLowerCase() +
-      (m.cuenta ? ' a ' + m.cuenta : '') : '') + ' por ' + venta.producto + (cliente ? ' para ' + cliente : '') +
-      ', ' + BMA.nombreDe(BMA.SUCURSALES, venta.sucursal) + ', ' + BMA.fecha(m.fecha) + '.';
-  }
-
-  async function pedirPago(m, n0, total, que) {
-    m.monto = await UI.pedirMonto({titulo: 'Monto', ayuda: paso(n0, total, que), valor: m.monto});
-    if (cancelado(m.monto)) return false;
-    m.metodo = await UI.abrirLista({titulo: 'Método', ayuda: paso(n0, total, que), elegido: m.metodo, grupos: [{opciones: BMA.METODOS}]});
-    if (cancelado(m.metodo)) return false;
-    m.cuenta = await UI.pedirTexto({titulo: 'Cuenta', ayuda: 'Opcional · banco donde cayó, p. ej. HSBC', opcional: true});
-    return !cancelado(m.cuenta);
-  }
-
-  async function agregarMovimiento(v) {
-    try {
-      var tipos = BMA.TIPOS.filter(function (t) { return t.valor !== 'contado'; });
-      var m = {fecha: BMA.hoy()};
-      m.tipo = await UI.abrirLista({titulo: 'Agregar movimiento', ayuda: v.producto + ' · ' + v.folio,
-        grupos: [{opciones: tipos.map(function (t) { return {valor: t.valor, nombre: t.nombre}; })}]});
-      if (cancelado(m.tipo)) return;
-      var conDinero = tipos.some(function (t) { return t.valor === m.tipo && t.conDinero; });
-      if (conDinero && !(await pedirPago(m, 1, 2, 'Pago'))) return;
-      m.fecha = await UI.pedirTexto({titulo: 'Fecha', tipo: 'date', valor: m.fecha, max: BMA.hoy()});
-      if (cancelado(m.fecha)) return;
-      m.nota = await UI.pedirTexto({titulo: 'Nota', ayuda: 'Opcional', tipo: 'largo', opcional: true, boton: 'Siguiente'});
-      if (cancelado(m.nota)) return;
-      var error = BMA.validarMovimiento(m);
-      if (error) { UI.aviso(error, true); return; }
-      if (!(await UI.confirmar({titulo: '¿Guardar?', ayuda: frase(m, v, v.cliente && v.cliente.nombre), si: 'Guardar'}))) return;
-      var r = await UI.guardar('bma_movimiento_nuevo', {p_venta: v.id, p: m});
-      if (r === null) return;
-      UI.aviso('Movimiento guardado');
-      abrir(v.id);
-    } catch (e) { /* el aviso ya se mostró */ }
-  }
-
-  async function ventaNueva() {
-    try {
-      var T = 3, v = {fecha: BMA.hoy()}, m = {};
-      v.sucursal = await UI.abrirLista({titulo: 'Sucursal', ayuda: paso(1, T, 'Venta'), grupos: [{opciones: BMA.SUCURSALES}]});
-      if (cancelado(v.sucursal)) return;
-      v.fecha = await UI.pedirTexto({titulo: 'Fecha de la venta', ayuda: paso(1, T, 'Venta'), tipo: 'date', valor: v.fecha, max: BMA.hoy()});
-      if (cancelado(v.fecha)) return;
-      v.producto = await UI.pedirTexto({titulo: 'Producto', ayuda: paso(1, T, 'Venta'), placeholder: 'p. ej. MC 200 PICK UP', boton: 'Siguiente'});
-      if (cancelado(v.producto)) return;
-      v.linea = await UI.abrirLista({titulo: 'Línea', ayuda: paso(1, T, 'Venta'), grupos: [{opciones: LINEAS}]});
-      if (cancelado(v.linea)) return;
-      var cli = await Personas.escoger({titulo: 'Cliente', tipo: 'cliente'});
-      if (!cli || !cli.id) return;
-      v.cliente_id = cli.id;
-      var ven = await Personas.escoger({titulo: 'Vendedor', tipo: 'vendedor', quitar: 'Sin vendedor'});
-      if (cancelado(ven)) return;
-      v.vendedor_id = ven.id || null;
-      v.remision = await UI.pedirTexto({titulo: 'Remisión o nota de venta', ayuda: 'Opcional', opcional: true, boton: 'Siguiente'});
-      if (cancelado(v.remision)) return;
-      v.factura = await UI.pedirTexto({titulo: 'Factura', ayuda: 'Opcional', opcional: true, boton: 'Siguiente'});
-      if (cancelado(v.factura)) return;
-      m.tipo = await UI.abrirLista({titulo: '¿Cómo paga?', ayuda: paso(2, T, 'Pago'), grupos: [{opciones: PAGO_INICIAL}]});
-      if (cancelado(m.tipo)) return;
-      if (!(await pedirPago(m, 2, T, 'Pago'))) return;
-      if (m.tipo === 'anticipo') {
-        var precio = await UI.pedirMonto({titulo: 'Precio total', ayuda: 'Opcional · déjalo vacío si aún no se sabe', opcional: true});
-        if (cancelado(precio)) return;
-        v.precio_total = precio === '' ? null : precio;
-      }
-      m.fecha = v.fecha;
-      m.nota = await UI.pedirTexto({titulo: 'Nota', ayuda: 'Opcional', tipo: 'largo', opcional: true, boton: 'Siguiente'});
-      if (cancelado(m.nota)) return;
-      var error = BMA.validarMovimiento(m);
-      if (error) { UI.aviso(error, true); return; }
-      if (!(await UI.confirmar({titulo: paso(3, T, '¿Guardar?'), ayuda: frase(m, v, cli.nombre), si: 'Guardar'}))) return;
-      v.movimiento = m;
-      var r = await UI.guardar('bma_venta_nueva', {p: v});
-      if (r === null) return;
-      UI.aviso('Venta ' + r.folio + ' guardada');
-      abrir(r.id);
-    } catch (e) { /* el aviso ya se mostró */ }
-  }
-
+  // ---------- Buscar una venta (lo usa Dudas) ----------
   // Busca y escoge una venta. -> Promise(id|null). Lo usan Registrar y Dudas.
   async function buscarVenta(titulo, sucursal) {
     var q = await UI.pedirTexto({titulo: titulo || '¿De qué venta?', placeholder: 'Folio, remisión, factura, producto o cliente', boton: 'Buscar'});
-    if (cancelado(q)) return null;
+    if ((q === null || q === undefined)) return null;
     var vs = await UI.llamar('bma_ventas_buscar', {p_q: q, p_sucursal: sucursal || null, p_estado: null, p_limite: 50});
     if (!vs.length) { UI.aviso('No encontré ventas con "' + q + '"', true); return null; }
     var id = await UI.abrirLista({titulo: 'Escoge la venta', buscar: vs.length > 8, grupos: [{opciones: vs.map(function (v) {
       return {valor: v.id, nombre: v.producto, detalle: v.folio + ' · ' + (v.cliente ? v.cliente.nombre : 'Sin cliente') +
         (v.remision ? ' · rem. ' + v.remision : '') + ' · ' + BMA.etiquetaEstado(v).texto};
     })}]});
-    return cancelado(id) ? null : id;
+    return (id === null || id === undefined) ? null : id;
   }
 
-  async function escogerVenta() {
-    try {
-      var id = await buscarVenta();
-      if (!id) return;
-      var r = await UI.llamar('bma_venta', {p_id: id});
-      abrir(id);
-      agregarMovimiento(r.venta);
-    } catch (e) { /* el aviso ya se mostró */ }
-  }
-
-  function registrar() {
-    UI.abrirLista({titulo: 'Registrar', grupos: [{opciones: [
-      {valor: 'nueva', nombre: 'Venta nueva', detalle: 'De contado o con anticipo'},
-      {valor: 'mov', nombre: 'Movimiento de una venta', detalle: 'Abono, liquidación, devolución, entrega…'}]}]})
-      .then(function (v) { if (v === 'nueva') ventaNueva(); else if (v === 'mov') escogerVenta(); });
-  }
-
-  window.Ventas = {pintar: pintar, abrir: abrir, registrar: registrar, agregarMovimiento: agregarMovimiento, buscarVenta: buscarVenta,
+  window.Ventas = {pintar: pintar, abrir: abrir, buscarVenta: buscarVenta,
                    recargar: function () { if (st.ficha) pintarFicha(st.ficha); else lista(); }};
 })();

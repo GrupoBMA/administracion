@@ -11,8 +11,7 @@
 
   function contar() {
     UI.llamar('bma_dudas', {p_estado: 'pendiente'}).then(function (ds) {
-      var c = $('cuenta-dudas'); if (!c) return;
-      c.hidden = !ds.length; c.textContent = ds.length;
+      document.querySelectorAll('.cuenta-dudas').forEach(function (c) { c.hidden = !ds.length; c.textContent = ds.length; });
     }).catch(function () {});
   }
 

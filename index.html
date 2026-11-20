@@ -9,7 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<link rel="stylesheet" href="ventas.css?v=3">
+<link rel="stylesheet" href="ventas.css?v=5">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
@@ -160,6 +160,7 @@ body:not(.sin-sesion) .entrar{display:none}
     <button class="btn" id="btn-actualizar" onclick="actualizar()" hidden>Actualizar</button>
     <input type="file" id="archivos" accept=".xlsx" multiple hidden onchange="leerArchivos(this.files)">
     <span class="quien" id="quien"></span>
+    <button class="btn btn-cat" id="btn-catalogos" onclick="selSeccion('catalogos')" aria-label="Catálogos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Catálogos</button>
     <button class="btn" id="btn-salir" onclick="salir()">Salir</button>
   </div>
 </header>
@@ -174,14 +175,19 @@ body:not(.sin-sesion) .entrar{display:none}
   <div class="error" id="error-entrar" role="status" hidden></div>
 </section>
 
-<nav class="tabs" id="tabs" hidden>
-  <button class="tab on" data-mod="ventas" onclick="selModulo('ventas')">Ventas</button>
-  <button class="tab" data-mod="personas" onclick="selModulo('personas')">Personas</button>
-  <button class="tab" data-mod="dudas" onclick="selModulo('dudas')">Dudas <span class="cuenta" id="cuenta-dudas" hidden></span></button>
-  <button class="tab" data-mod="caja" onclick="selModulo('caja')">Caja</button>
-  <button class="tab" data-mod="cobros" onclick="selModulo('cobros')">Cobros</button>
-  <button class="tab" data-mod="gastos" onclick="selModulo('gastos')">Gastos</button>
-  <button class="tab" data-mod="revisar" onclick="selModulo('revisar')">Revisar <span class="cuenta" id="cuenta-revisar" hidden></span></button>
+<nav class="secciones" id="tabs" hidden aria-label="Secciones">
+  <button class="sec on" data-sec="ventas" onclick="selSeccion('ventas')">Ventas</button>
+  <button class="sec" data-sec="revisar" onclick="selSeccion('revisar')">Revisar <span class="cuenta cuenta-dudas" hidden></span></button>
+</nav>
+<nav class="tabs subtabs" id="subtabs" aria-label="Pestañas">
+  <button class="tab" data-sec="ventas" data-mod="registrar" onclick="selModulo('registrar')">Registrar</button>
+  <button class="tab" data-sec="ventas" data-mod="ventas" onclick="selModulo('ventas')">Historial</button>
+  <button class="tab" data-sec="revisar" data-mod="dudas" onclick="selModulo('dudas')">Dudas <span class="cuenta cuenta-dudas" id="cuenta-dudas" hidden></span></button>
+  <button class="tab" data-sec="revisar" data-mod="caja" onclick="selModulo('caja')">Caja del Drive</button>
+  <button class="tab" data-sec="revisar" data-mod="cobros" onclick="selModulo('cobros')">Cobros del Drive</button>
+  <button class="tab" data-sec="revisar" data-mod="gastos" onclick="selModulo('gastos')">Gastos del Drive</button>
+  <button class="tab" data-sec="revisar" data-mod="revisar" onclick="selModulo('revisar')">Errores del Drive <span class="cuenta" id="cuenta-revisar" hidden></span></button>
+  <button class="tab" data-sec="catalogos" data-mod="personas" onclick="selModulo('personas')">Personas</button>
 </nav>
 
 <main>
@@ -196,6 +202,7 @@ body:not(.sin-sesion) .entrar{display:none}
     <button class="mas" onclick="escogerArchivos()">O escoge los archivos de tu computadora</button>
     <div class="error" id="error-inicio" role="status" hidden></div>
   </section>
+  <section class="modulo" id="mod-registrar"></section>
   <section class="modulo" id="mod-ventas"></section>
   <section class="modulo" id="mod-personas"></section>
   <section class="modulo" id="mod-dudas"></section>
@@ -527,17 +534,18 @@ function dinero(n){
 if (typeof module !== 'undefined') module.exports = {leerLibro:leerLibro, calcular:calcular, clasificarCobro:clasificarCobro};
 </script>
 
-<script src="bma-logica.js?v=3"></script>
-<script src="bma-ui.js?v=3"></script>
-<script src="personas.js?v=3"></script>
-<script src="ventas.js?v=3"></script>
-<script src="dudas.js?v=3"></script>
+<script src="bma-logica.js?v=4"></script>
+<script src="bma-ui.js?v=5"></script>
+<script src="personas.js?v=4"></script>
+<script src="ventas.js?v=4"></script>
+<script src="registrar.js?v=1"></script>
+<script src="dudas.js?v=4"></script>
 <script>
 var CLAVE = 'bma.reportes.v1';
 var datos = null;        // lo leido de los Excel: {leido, sucursales:{AGS:{archivo,hojas}}}
 var calc = null;         // resultado de calcular(datos)
 var revisarVista = 'pendientes';
-var moduloSel = 'ventas';
+var moduloSel = 'registrar';
 var sucFiltro = 'todas';
 var abiertas = {};
 var verApartados = false;
@@ -752,10 +760,17 @@ function corregidos(){
 }
 
 // Ventas, Personas y Dudas leen de Supabase (ventas.js, personas.js, dudas.js); las demás, del Drive.
-function moduloNuevo(mod){ return {ventas: window.Ventas, personas: window.Personas, dudas: window.Dudas}[mod]; }
+function moduloNuevo(mod){ return {registrar: window.Registrar, ventas: window.Ventas, personas: window.Personas, dudas: window.Dudas}[mod]; }
+// Dos niveles: sección (Ventas, Revisar, Catálogos) y sus pestañas. Cada sección recuerda su última pestaña.
+var ultimaDe = {ventas: 'registrar', revisar: 'dudas', catalogos: 'personas'};
+function selSeccion(sec){ selModulo(ultimaDe[sec]); }
 function selModulo(mod){
   moduloSel = mod;
-  document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('on', t.dataset.mod === mod); });
+  var tab = document.querySelector('.subtabs [data-mod="' + mod + '"]'), sec = tab ? tab.dataset.sec : 'ventas';
+  ultimaDe[sec] = mod;
+  document.querySelectorAll('.subtabs .tab').forEach(function(t){ t.hidden = t.dataset.sec !== sec; t.classList.toggle('on', t.dataset.mod === mod); });
+  document.querySelectorAll('.secciones .sec').forEach(function(b){ b.classList.toggle('on', b.dataset.sec === sec); });
+  document.getElementById('btn-catalogos').classList.toggle('on', sec === 'catalogos');
   var nuevo = moduloNuevo(mod);
   document.querySelectorAll('.modulo').forEach(function(m){ m.classList.toggle('on', m.id === 'mod-' + mod); });
   ['btn-actualizar','leido'].forEach(function(id){ document.getElementById(id).hidden = !!nuevo || !calc; });
@@ -1007,7 +1022,7 @@ function arrancar(){
   if (carpetaGuardada()) document.getElementById('carpeta').value = 'https://drive.google.com/drive/folders/' + carpetaGuardada();
   if (datos && datos.sucursales && Object.keys(datos.sucursales).length) calc = calcular(datos);
   document.getElementById('tabs').hidden = false;
-  selModulo('ventas');
+  selModulo('registrar');
   if (window.Dudas) Dudas.contar();
 }
 sb.auth.getSession().then(function(r){

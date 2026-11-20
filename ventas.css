@@ -101,3 +101,60 @@ button.cifra{border:0;text-align:left;width:auto;padding:10px 12px;display:block
   .hoja.abierta .hoja-caja{transform:translateY(0)}
 }
 @media(prefers-reduced-motion:reduce){.hoja-caja,.hoja-fondo,.bma-aviso{transition:none}}
+
+/* ---------- Menú: secciones y sus pestañas ---------- */
+body.sin-sesion nav.secciones{display:none!important}
+.secciones{max-width:1000px;margin:16px auto 0;padding:0 16px;display:flex;gap:6px;flex-wrap:wrap}
+.sec{border:0;background:none;font-family:var(--font);font-size:15px;font-weight:600;color:var(--text2);padding:9px 16px;border-radius:999px;
+  display:flex;align-items:center;gap:7px;transition:background-color .15s,color .15s}
+.sec:hover{color:var(--text);background:var(--surface2)}
+.sec.on{background:var(--text);color:var(--bg)}
+.sec.on .cuenta{background:var(--bg);color:var(--text)}
+nav.subtabs{margin-top:8px}
+.btn-cat{display:inline-flex;align-items:center;gap:6px}
+.btn-cat svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.btn-cat.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+
+/* ---------- Registrar: una pantalla con pasos ---------- */
+.registro{max-width:720px}
+.paso{padding:18px 0;border-top:1px solid var(--border)}
+.paso:first-child{border-top:0;padding-top:4px}
+.paso-tit{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;margin-bottom:12px}
+.paso-n{width:24px;height:24px;border-radius:999px;background:var(--surface2);color:var(--text2);font-size:12px;display:grid;place-items:center;flex:none;font-family:var(--mono)}
+.opcional{font-size:12px;font-weight:400;color:var(--text3)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip-op{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:999px;padding:9px 16px;font-family:var(--font);font-size:14px;
+  font-weight:500;min-height:40px;transition:background-color .12s,border-color .12s,color .12s}
+.chip-op:hover{border-color:var(--text2)}
+.chip-op.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.campo{width:100%;font-family:var(--font);font-size:16px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px}
+.campo:focus{outline:none;border-color:var(--text)}
+.campo.num{font-family:var(--mono)}
+.lbl{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2);margin:12px 0 6px}
+.lbl>span{display:block}
+.fila2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.monto-in{display:flex!important;align-items:center;gap:8px;font-family:var(--mono);color:var(--text)}
+.mas{border:0;background:none;color:var(--text2);font-family:var(--font);font-size:14px;text-decoration:underline;text-underline-offset:3px;padding:6px 0 14px}
+.mas:hover{color:var(--text)}
+.guardar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);padding:14px 0 18px;margin-top:8px}
+.guardar .resumen{font-size:16px;line-height:1.5;margin:0 0 4px;min-height:24px}
+.guardar .acciones{margin-top:10px}
+.elegida{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px}
+.elegida .sec{display:block;padding:0;font-size:13px;font-weight:400;color:var(--text2);border-radius:0;background:none;margin-top:2px}
+#r-ventas:not(:empty){margin-top:10px}
+
+/* ---------- Lista desplegable de personas ---------- */
+.combo{position:relative}
+.combo-lista{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:0 8px 24px rgba(0,0,0,.14);max-height:300px;overflow-y:auto;overscroll-behavior:contain}
+.combo-fila{display:flex;align-items:center;gap:10px;padding:9px 8px 9px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:15px}
+.combo-fila.marca,.combo-fila:hover{background:var(--surface2)}
+.combo-nom{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.combo-num{color:var(--text3);font-size:12px}
+.combo-x{border:0;background:none;color:var(--text3);font-size:18px;line-height:1;width:32px;height:32px;border-radius:8px;flex:none}
+.combo-x:hover{color:var(--alerta);background:var(--alerta-bg)}
+.combo-vacio{padding:12px 14px;color:var(--text3);font-size:14px}
+.combo-agregar{padding:12px 14px;font-weight:600;font-size:14px;cursor:pointer}
+.combo-agregar:hover{background:var(--surface2)}
+@media(max-width:640px){.fila2{grid-template-columns:1fr}}
+@media(max-width:640px){.head-in .quien{display:none}.secciones{margin-top:12px}}

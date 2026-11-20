@@ -178,6 +178,56 @@ begin
   perform pg_temp.como(cap); j := public.bma_dudas('resuelta'); perform pg_temp.yo();
   perform pg_temp.anota('lista de dudas resueltas', j @> jsonb_build_array(jsonb_build_object('id', dud)));
 
+  -- 16. el precio automático (contado sin precio) sigue a las correcciones; el escrito a mano no
+  perform pg_temp.como(cap);
+  j := public.bma_venta_nueva(jsonb_build_object('sucursal', 'TIJ', 'fecha', '2026-11-18', 'producto', 'PRODUCTOPRUEBA AUTO',
+        'linea', 'motos', 'movimiento', jsonb_build_object('tipo', 'contado', 'monto', 20000, 'metodo', 'efectivo', 'fecha', '2026-11-18')));
+  v1 := (j->>'id')::uuid;
+  perform pg_temp.yo();
+  select id into mov from bma.movimientos where venta_id = v1;
+  perform pg_temp.como(cap);
+  perform public.bma_movimiento_corregir(mov, jsonb_build_object('monto', 21000));
+  perform pg_temp.yo();
+  perform pg_temp.anota('precio automático sigue la corrección', (select precio_total from bma.ventas where id = v1) = 21000);
+  perform pg_temp.como(adm); perform public.bma_movimiento_eliminar(mov); perform pg_temp.yo();
+  perform pg_temp.anota('sin contado vuelve a abierta y sin precio',
+    (select estado from bma.ventas where id = v1) = 'abierta' and (select precio_total from bma.ventas where id = v1) is null);
+  perform pg_temp.como(cap);
+  m := public.bma_movimiento_nuevo(v1, jsonb_build_object('tipo', 'abono', 'monto', 1000, 'metodo', 'efectivo', 'fecha', '2026-11-19'));
+  perform public.bma_venta_editar(v1, jsonb_build_object('precio_total', 50000));
+  m := public.bma_movimiento_nuevo(v1, jsonb_build_object('tipo', 'liquidacion', 'monto', 2000, 'metodo', 'efectivo', 'fecha', '2026-11-19'));
+  perform pg_temp.yo();
+  perform pg_temp.anota('precio escrito a mano no se recalcula', (select precio_total from bma.ventas where id = v1) = 50000);
+
+  -- 17. unir una duda no arrastra las dudas de otros movimientos de la misma venta
+  insert into bma.ventas (folio, sucursal, fecha, producto, linea, estado, origen)
+    values ('TIJ-2026-0002', 'TIJ', '2026-11-03', 'PRODUCTOPRUEBA DOS', 'motos', 'cerrada', 'importada') returning id into v3;
+  insert into bma.movimientos (venta_id, fecha, lunes, tipo, monto, origen) values (v3, '2026-11-03', '2026-11-02', 'liquidacion', 100, 'importada') returning id into mov;
+  insert into bma.movimientos (venta_id, fecha, lunes, tipo, monto, origen) values (v3, '2026-11-03', '2026-11-02', 'abono', 200, 'importada') returning id into m;
+  insert into bma.dudas_importacion (venta_id, movimiento_id, motivo, detalle) values (v3, mov, 'sin_anticipo', 'a') returning id into dud;
+  insert into bma.dudas_importacion (venta_id, movimiento_id, motivo, detalle) values (v3, m, 'sin_anticipo', 'b');
+  perform pg_temp.como(cap); perform public.bma_duda_resolver(dud, v2, null); perform pg_temp.yo();
+  perform pg_temp.anota('unir no arrastra dudas de otros movimientos',
+    (select venta_id from bma.dudas_importacion where movimiento_id = m) = v3 and exists (select 1 from bma.ventas where id = v3));
+
+  -- 18. devolución después de cancelar, y nunca mayor a lo pagado
+  perform pg_temp.como(cap);
+  j := public.bma_venta_nueva(jsonb_build_object('sucursal', 'TIJ', 'fecha', '2026-11-18', 'producto', 'PRODUCTOPRUEBA DEVUELVE',
+        'linea', 'motos', 'movimiento', jsonb_build_object('tipo', 'anticipo', 'monto', 3000, 'metodo', 'efectivo', 'fecha', '2026-11-18')));
+  v3 := (j->>'id')::uuid;
+  m := public.bma_movimiento_nuevo(v3, jsonb_build_object('tipo', 'cancelacion', 'fecha', '2026-11-19'));
+  m := public.bma_movimiento_nuevo(v3, jsonb_build_object('tipo', 'devolucion', 'monto', 3000, 'metodo', 'efectivo', 'fecha', '2026-11-19'));
+  perform pg_temp.yo();
+  perform pg_temp.anota('devolución después de cancelar', bma.pagado(v3) = 0);
+  begin
+    perform pg_temp.como(cap);
+    m := public.bma_movimiento_nuevo(v3, jsonb_build_object('tipo', 'devolucion', 'monto', 1, 'metodo', 'efectivo', 'fecha', '2026-11-19'));
+    perform pg_temp.yo(); perform pg_temp.anota('devolución mayor a lo pagado se rechaza', false);
+  exception when others then
+    get stacked diagnostics err = message_text;
+    perform pg_temp.yo(); perform pg_temp.anota('devolución mayor a lo pagado se rechaza', err like '%mayor que lo pagado%', err);
+  end;
+
   -- 15. con algo capturado o resuelto, la importación queda cerrada
   begin
     perform pg_temp.como(adm); j := public.bma_importar_empezar();

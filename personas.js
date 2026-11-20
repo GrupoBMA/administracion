@@ -119,7 +119,16 @@
   // Buscador de personas para escoger una (cliente o vendedor). -> Promise({id, nombre}|null); {id:null} = quitar
   function escoger(o) {
     o = o || {};
+    var TOPE = 300;   // lo que regresa bma_personas_buscar como máximo
     return UI.llamar('bma_personas_buscar', {p_q: '', p_tipo: o.tipo || null}).then(function (ps) {
+      if (ps.length < TOPE) return ps;
+      // Ya son muchas para cargarlas todas: se busca en la base por nombre o número
+      return UI.pedirTexto({titulo: o.titulo || 'Escoger persona', placeholder: 'Nombre o número', boton: 'Buscar'}).then(function (q) {
+        if (q === null || q === undefined) return null;
+        return UI.llamar('bma_personas_buscar', {p_q: q, p_tipo: o.tipo || null});
+      });
+    }).then(function (ps) {
+      if (!ps) return null;
       var ops = [{valor: '+nueva', nombre: '+ Nueva persona'}];
       if (o.quitar) ops.push({valor: '-', nombre: o.quitar});
       return UI.abrirLista({titulo: o.titulo || 'Escoger persona', buscar: true, elegido: o.elegido || null, grupos: [

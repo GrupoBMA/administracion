@@ -1,15 +1,14 @@
 // Registrar en una sola pantalla con pasos numerados (window.Registrar), como el registro de GVF.
-// Primero "¿Qué vas a registrar?"; según la respuesta aparecen los pasos que tocan. Nada se guarda hasta "Guardar".
+// Se entra desde el menú: "Nueva venta" o "Registrar pago" (Registrar.abrir). Aparecen solo los pasos que tocan; nada se guarda hasta "Guardar".
 (function () {
   var esc = BMA.esc, $ = function (id) { return document.getElementById(id); };
   var LINEAS = [{valor: 'motos', nombre: 'Motos'}, {valor: 'pasto', nombre: 'Pasto'}, {valor: 'otro', nombre: 'Otro'}];
-  var QUE = [{valor: 'nueva', nombre: 'Venta nueva'}, {valor: 'pago', nombre: 'Pago o movimiento de una venta'}];
   var PAGO_INICIAL = [{valor: 'contado', nombre: 'Contado'}, {valor: 'anticipo', nombre: 'Anticipo'}];
   var TIPOS_PAGO = BMA.TIPOS.filter(function (t) { return t.valor !== 'contado'; });
   var st, combos = {};
 
   function limpio(que) {
-    return {que: que || null, venta: null, v: {linea: 'motos', fecha: BMA.hoy()}, m: {fecha: BMA.hoy()}, mas: false};
+    return {que: que || 'nueva', venta: null, v: {linea: 'motos', fecha: BMA.hoy()}, m: {fecha: BMA.hoy()}, mas: false};
   }
   st = limpio();
 
@@ -45,7 +44,7 @@
   }
 
   function pintar() {
-    var n = 1, h = '<div class="registro">' + paso(n++, '¿Qué vas a registrar?', chips('que', QUE, st.que));
+    var n = 1, h = '<div class="registro">';
     if (st.que === 'nueva') {
       var v = st.v;
       h += paso(n++, 'Sucursal', chips('sucursal', BMA.SUCURSALES, v.sucursal));
@@ -63,7 +62,7 @@
           '<label class="lbl">Nota<span>' + campo('r-nota', st.m.nota) + '</span></label>', true);
       }
     } else if (st.que === 'pago') {
-      h += paso(n++, '¿De qué venta?', st.venta ? ventaElegida() :
+      h += paso(n++, '¿A qué venta?', st.venta ? ventaElegida() :
         campo('r-bventa', '', {ph: 'Folio, remisión, factura, producto o cliente'}) + '<div id="r-ventas" class="renglones vacio-oculto"></div>');
       if (st.venta) {
         var q = pagoHtml(n, TIPOS_PAGO); h += q.html; n = q.n;
@@ -92,8 +91,7 @@
       var b = ev.target.closest('[data-grupo]');
       if (b) {
         var g = b.dataset.grupo, val = b.dataset.valor;
-        if (g === 'que') { if (val !== st.que) st = limpio(val); }
-        else if (g === 'tipo' || g === 'metodo') { leer(); st.m[g] = val; }
+        if (g === 'tipo' || g === 'metodo') { leer(); st.m[g] = val; }
         else { leer(); st.v[g] = val; }
         pintar(); return;
       }
@@ -198,7 +196,7 @@
     llamada.then(function (ventaId) {
       if (!ventaId) { $('r-guardar').disabled = false; return; }
       UI.aviso('Guardado');
-      st = limpio();
+      st = limpio(st.que);
       selModulo('ventas'); Ventas.abrir(ventaId);
     }).catch(function () { if ($('r-guardar')) $('r-guardar').disabled = false; });
   }
@@ -206,5 +204,9 @@
   // Abrir Registrar ya con una venta escogida (desde la ficha: "Agregar movimiento")
   function pagoDe(venta) { st = limpio('pago'); st.venta = venta; selModulo('registrar'); }
 
-  window.Registrar = {pintar: pintar, pagoDe: pagoDe};
+  // Desde el menú: si ya estaba en esa misma opción, se conserva lo capturado
+  function abrir(que) { if (st.que !== que) st = limpio(que); pintar(); }
+  function que() { return st.que; }
+
+  window.Registrar = {pintar: pintar, pagoDe: pagoDe, abrir: abrir, que: que};
 })();

@@ -15,9 +15,9 @@
     if (st.ficha) { pintarFicha(st.ficha); return; }
     cont().innerHTML =
       '<div class="barra"><input class="campo-buscar" id="v-q" type="search" placeholder="Folio, remisión, factura, producto o cliente" aria-label="Buscar venta">' +
-      '<button class="filtro" id="v-suc">Sucursal: <b>' + esc(st.sucursal ? BMA.nombreDe(BMA.SUCURSALES, st.sucursal) : 'Todas') + '</b></button>' +
-      '<button class="filtro" id="v-est">Estado: <b>' + esc(BMA.nombreDe(ESTADOS, st.estado || '')) + '</b></button>' +
-      '<button class="btn primario" id="v-registrar">Registrar</button></div>' +
+      UI.filtro('v-suc', 'Sucursal', st.sucursal ? BMA.nombreDe(BMA.SUCURSALES, st.sucursal) : 'Todas') +
+      '<button class="btn primario" id="v-registrar">Nueva venta</button></div>' +
+      UI.seg('v-est', ESTADOS, st.estado || '') +
       '<div id="v-lista" class="renglones"><p class="vacio">Cargando…</p></div>';
     var q = $('v-q'); q.value = st.q;
     q.oninput = function () { clearTimeout(st.tiempo); st.tiempo = setTimeout(function () { st.q = q.value; lista(); }, 300); };
@@ -25,11 +25,11 @@
       UI.abrirLista({titulo: 'Sucursal', elegido: st.sucursal || '', grupos: [{opciones: [{valor: '', nombre: 'Todas'}].concat(BMA.SUCURSALES)}]})
         .then(function (v) { if (v === null) return; st.sucursal = v || null; pintar(); });
     };
-    $('v-est').onclick = function () {
-      UI.abrirLista({titulo: 'Estado', elegido: st.estado || '', grupos: [{opciones: ESTADOS}]})
-        .then(function (v) { if (v === null) return; st.estado = v || ''; pintar(); });
+    $('v-est').onclick = function (ev) {
+      var b = ev.target.closest('[data-valor]'); if (!b || b.dataset.valor === (st.estado || '')) return;
+      st.estado = b.dataset.valor; pintar();
     };
-    $('v-registrar').onclick = function () { selModulo('registrar'); };
+    $('v-registrar').onclick = function () { ir('nueva'); };
     lista();
   }
 
@@ -85,7 +85,7 @@
     UI.llamar('bma_venta', {p_id: id}).then(function (r) {
       var v = r.venta, e = BMA.etiquetaEstado(v), s = BMA.saldo(v);
       var dudas = r.dudas.filter(function (d) { return d.estado === 'pendiente'; });
-      cont().innerHTML = '<div class="ficha-top"><button class="volver" id="v-volver">← Ventas</button></div><div class="ficha">' +
+      cont().innerHTML = '<div class="ficha-top"><button class="volver" id="v-volver">‹ Lista de ventas</button></div><div class="ficha">' +
         (dudas.length ? '<div class="aviso-duda">' + dudas.map(function (d) { return esc(BMA.MOTIVOS[d.motivo] || d.motivo) + ': ' + esc(d.detalle); }).join('<br>') + '</div>' : '') +
         '<h2>' + esc(v.producto) + '</h2><div class="sub">' + esc(v.folio) + ' · ' + esc(BMA.nombreDe(BMA.SUCURSALES, v.sucursal)) + ' · ' +
         BMA.fecha(v.fecha) + ' · <span class="chip-estado ' + e.clase + '">' + esc(e.texto) + '</span></div>' +
@@ -97,7 +97,7 @@
         dato('vendedor_id', 'Vendedor', v.vendedor && v.vendedor.nombre) + dato('remision', 'Remisión', v.remision) +
         dato('factura', 'Factura', v.factura) + dato('producto', 'Producto', v.producto) +
         dato('linea', 'Línea', BMA.nombreDe(LINEAS, v.linea)) + dato('color', 'Color', v.color) + '</div>' +
-        '<div class="btn-fila"><button class="btn primario" id="v-agregar">Agregar movimiento</button></div>' +
+        '<div class="btn-fila"><button class="btn primario" id="v-agregar">Registrar pago</button></div>' +
         '<div class="seccion">Movimientos</div>' + (r.movimientos.length ? r.movimientos.map(movimiento).join('') : '<p class="vacio">Sin movimientos.</p>') +
         (r.cambios.length ? '<div class="seccion">Cambios</div>' + r.cambios.map(function (c) { return cambio(c, r.nombres); }).join('') : '') +
         '</div>';
@@ -186,6 +186,9 @@
     return (id === null || id === undefined) ? null : id;
   }
 
-  window.Ventas = {pintar: pintar, abrir: abrir, buscarVenta: buscarVenta,
+  // Desde el menú: la lista, sin ficha abierta
+  function inicio() { st.ficha = null; pintar(); }
+
+  window.Ventas = {pintar: pintar, inicio: inicio, abrir: abrir, buscarVenta: buscarVenta,
                    recargar: function () { if (st.ficha) pintarFicha(st.ficha); else lista(); }};
 })();

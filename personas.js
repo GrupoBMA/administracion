@@ -3,6 +3,8 @@
 (function () {
   var esc = BMA.esc, $ = function (id) { return document.getElementById(id); };
   var TIPOS = [{valor: 'cliente', nombre: 'Cliente'}, {valor: 'empleado', nombre: 'Empleado'}, {valor: 'vendedor', nombre: 'Vendedor'}];
+  var VOLVER = {cliente: 'Clientes', vendedor: 'Vendedores', empleado: 'Empleados'};
+  var NUEVO = {cliente: 'Nuevo cliente', vendedor: 'Nuevo vendedor', empleado: 'Nuevo empleado'};
   var st = {q: '', tipo: null, quitadas: false, ficha: null, tiempo: null};
 
   function cont() { return $('mod-personas'); }
@@ -12,21 +14,15 @@
     if (st.ficha) { abrir(st.ficha); return; }
     cont().innerHTML =
       '<div class="barra"><input class="campo-buscar" id="p-q" type="search" placeholder="Buscar por nombre o número" aria-label="Buscar persona">' +
-      '<button class="filtro" id="p-tipo">Tipo: <b>' + esc(st.tipo ? BMA.nombreDe(TIPOS, st.tipo) : 'Todos') + '</b></button>' +
-      '<button class="filtro" id="p-ver">Ver: <b>' + (st.quitadas ? 'Quitadas' : 'En las listas') + '</b></button>' +
-      '<button class="btn" id="p-nueva">Nueva persona</button></div><div id="p-lista" class="renglones"><p class="vacio">Cargando…</p></div>';
+      '<button class="btn primario" id="p-nueva">' + esc(NUEVO[st.tipo] || 'Nueva persona') + '</button></div>' +
+      UI.seg('p-ver', [{valor: 'a', nombre: 'En las listas'}, {valor: 'q', nombre: 'Quitadas'}], st.quitadas ? 'q' : 'a') + '<div id="p-lista" class="renglones"><p class="vacio">Cargando…</p></div>';
     var q = $('p-q'); q.value = st.q;
     q.oninput = function () { clearTimeout(st.tiempo); st.tiempo = setTimeout(function () { st.q = q.value; lista(); }, 300); };
-    $('p-tipo').onclick = function () {
-      UI.abrirLista({titulo: 'Tipo', elegido: st.tipo || '', grupos: [{opciones: [{valor: '', nombre: 'Todos'}].concat(TIPOS)}]})
-        .then(function (v) { if (v === null) return; st.tipo = v || null; pintar(); });
+    $('p-ver').onclick = function (ev) {
+      var b = ev.target.closest('[data-valor]'); if (!b) return;
+      if ((b.dataset.valor === 'q') !== st.quitadas) { st.quitadas = b.dataset.valor === 'q'; pintar(); }
     };
-    $('p-ver').onclick = function () {
-      UI.abrirLista({titulo: 'Ver', elegido: st.quitadas ? 'q' : 'a', grupos: [{opciones: [
-        {valor: 'a', nombre: 'En las listas'}, {valor: 'q', nombre: 'Quitadas', detalle: 'Las que alguien quitó de las listas'}]}]})
-        .then(function (v) { if (v === null) return; st.quitadas = v === 'q'; pintar(); });
-    };
-    $('p-nueva').onclick = function () { nueva().then(function (p) { if (p) { st.ficha = p.id; pintar(); } }); };
+    $('p-nueva').onclick = function () { nueva(st.tipo).then(function (p) { if (p) { st.ficha = p.id; pintar(); } }); };
     lista();
   }
 
@@ -34,7 +30,8 @@
     UI.llamar('bma_personas_buscar', {p_q: st.q, p_tipo: st.tipo, p_incluir_ocultas: st.quitadas}).then(function (ps) {
       var el = $('p-lista'); if (!el) return;
       if (st.quitadas) ps = ps.filter(function (p) { return p.activa === false; });
-      if (!ps.length) { el.innerHTML = '<p class="vacio">No hay personas con esa búsqueda.</p>'; return; }
+      if (!ps.length) { el.innerHTML = '<p class="vacio">' + (st.q ? 'No encontré a nadie con «' + esc(st.q) + '».' : st.quitadas ? 'No hay nadie quitado de las listas.' :
+        'Todavía no hay ' + esc((VOLVER[st.tipo] || 'personas').toLowerCase()) + '.') + '</p>'; return; }
       el.innerHTML = ps.map(function (p) {
         var cuenta = [p.ventas ? p.ventas + ' compra' + (p.ventas > 1 ? 's' : '') : '', p.vendidas ? p.vendidas + ' vendida' + (p.vendidas > 1 ? 's' : '') : '']
           .filter(Boolean).join(' · ');
@@ -61,7 +58,7 @@
           '<span class="sec der"><span class="chip-estado ' + e.clase + '">' + esc(e.texto) + '</span>' +
           (conSaldo && s ? ' · saldo ' + BMA.dinero(s) : '') + '</span></button>';
       };
-      cont().innerHTML = '<div class="ficha-top"><button class="volver" id="p-volver">← Personas</button></div><div class="ficha">' +
+      cont().innerHTML = '<div class="ficha-top"><button class="volver" id="p-volver">‹ ' + esc(VOLVER[st.tipo] || 'Personas') + '</button></div><div class="ficha">' +
         '<h2>' + esc(p.nombre) + '</h2><div class="sub">Número ' + esc(p.numero) + (p.activa ? '' : ' · <span class="chip-estado cancelada">Quitada de las listas</span>') + '</div><div class="datos">' +
         dato('nombre', 'Nombre', p.nombre) + dato('tipos', 'Es', tiposTxt(p.tipos)) + dato('telefono', 'Teléfono', p.telefono) +
         dato('sucursal', 'Sucursal', p.sucursal ? BMA.nombreDe(BMA.SUCURSALES, p.sucursal) : '') + dato('notas', 'Notas', p.notas) + '</div>' +
@@ -159,5 +156,11 @@
     }).catch(function () { return null; });
   }
 
-  window.Personas = {pintar: pintar, abrir: function (id) { st.ficha = id; pintar(); }, escoger: escoger, nueva: nueva, contar: function () {}};
+  // Desde el menú (Clientes, Vendedores, Empleados): la lista de ese tipo; seguir = conservar la ficha abierta
+  function deTipo(tipo, seguir) {
+    if (!seguir || st.tipo !== tipo) { st.ficha = null; if (st.tipo !== tipo) st.q = ''; }
+    st.tipo = tipo; pintar();
+  }
+
+  window.Personas = {pintar: pintar, deTipo: deTipo, abrir: function (id) { st.ficha = id; pintar(); }, escoger: escoger, nueva: nueva, contar: function () {}};
 })();

@@ -3,67 +3,90 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grupo BMA</title>
+<title>Administración · Grupo BMA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&amp;family=DM+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<link rel="stylesheet" href="ventas.css?v=5">
+<link rel="stylesheet" href="ventas.css?v=7">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
 :root{
-  --bg:#F7F4EF;--surface:#FFFFFF;--surface2:#F0EDE7;--border:#E2DDD6;
-  --text:#1A1714;--text2:#6B6560;--text3:#8F887F;
+  /* Fondo gris claro, tarjetas blancas sin borde; --surface2 rellena campos; --acento marca lo elegido */
+  --bg:#F2F2EF;--surface:#FFFFFF;--surface2:#EDEDE8;--track:#E6E6E0;--border:#E6E6E0;
+  --text:#121310;--text2:#5D5F58;--text3:#6B6D66;
+  --acento:#1F3A6B;--acento-bg:#E7ECF5;--on-acento:#FFFFFF;
+  --rail:248px;
   /* Caja arriba del limite: tono suave y tono fuerte para montos grandes. */
   --alerta:#B42318;--alerta-bg:#FCEDEB;--alerta-bg2:#F8D9D4;
   --ok:#2C7A5A;
-  --radius:10px;--radius-lg:14px;
-  --shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
-  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --radius:12px;--radius-lg:16px;
+  --shadow:0 1px 2px rgba(18,19,16,.06),0 2px 8px rgba(18,19,16,.05);
+  --shadow-pop:0 12px 40px rgba(18,19,16,.18);
+  --font:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:var(--font);
 }
 @media(prefers-color-scheme:dark){:root{
-  --bg:#141210;--surface:#1E1C19;--surface2:#262320;--border:#32302C;
-  --text:#F0ECE6;--text2:#A39B8E;--text3:#7D766E;
+  --bg:#0D0E0C;--surface:#171815;--surface2:#21221F;--track:#1C1D1A;--border:#2A2B27;
+  --text:#F3F4F0;--text2:#B3B5AE;--text3:#979991;
+  --acento:#A9C1EE;--acento-bg:#1B2538;--on-acento:#0D0E0C;
+  --shadow:0 1px 2px rgba(0,0,0,.4);--shadow-pop:0 12px 40px rgba(0,0,0,.55);
   --alerta:#F08A7E;--alerta-bg:#2B1512;--alerta-bg2:#401B16;
   --ok:#3CB87A;
 }}
 html{color-scheme:light dark}
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 80px;-webkit-font-smoothing:antialiased}
-::selection{background:var(--text);color:var(--bg)}
-button{font-family:var(--font);cursor:pointer;color:inherit}
-:focus-visible{outline:2px solid var(--text);outline-offset:2px;border-radius:6px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;-webkit-tap-highlight-color:transparent}
+::selection{background:var(--acento-bg);color:var(--text)}
+input,textarea{caret-color:var(--acento)}
+button{font-family:var(--font);cursor:pointer;color:inherit;touch-action:manipulation}
+:focus-visible{outline:2px solid var(--acento);outline-offset:2px;border-radius:8px}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
 
-header{background:var(--surface);border-bottom:1px solid var(--border)}
-.head-in{max-width:1000px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-h1{font-size:18px;font-weight:600;letter-spacing:-0.01em;margin-right:auto}
+/* Menú por módulos: a la izquierda desde 1024px; arriba, en una fila que se desliza, en celular y tablet */
+.menu{position:fixed;left:0;top:0;bottom:0;width:var(--rail);background:var(--surface);display:flex;flex-direction:column;padding:22px 14px 16px;overflow-y:auto;z-index:30}
+body:not(.sin-sesion){padding-left:var(--rail)}
+body.sin-sesion .menu{display:none}
+.marca{display:flex;align-items:center;gap:11px;padding:0 8px 14px}
+.marca b{display:block;font-size:15px;font-weight:600;letter-spacing:-0.01em}
+.marca span{display:block;font-size:12px;color:var(--text2);margin-top:1px}
+.marca .logo{width:34px;height:34px;border-radius:10px;background:var(--text);color:var(--surface);display:grid;place-items:center;font-size:17px;font-weight:700;margin:0;flex:none}
+.menu-ops{display:flex;flex-direction:column;gap:2px}
+.m-grupo{font-size:12px;font-weight:500;color:var(--text3);padding:16px 10px 6px}
+.m-op{display:flex;align-items:center;gap:11px;width:100%;min-height:44px;padding:6px 10px;border:0;background:none;border-radius:12px;font-size:14.5px;font-weight:500;color:var(--text2);text-align:left;transition:background-color .15s,color .15s}
+.m-ico{width:30px;height:30px;border-radius:9px;background:var(--surface2);display:grid;place-items:center;flex:none;transition:background-color .15s,color .15s}
+.m-ico svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.m-nom{min-width:0;flex:1}
+.m-op.on{background:var(--acento-bg);color:var(--acento)}
+.m-op.on .m-ico{background:var(--acento);color:var(--on-acento)}
+.m-op:active{transform:scale(.98)}
+@media(hover:hover){.m-op:not(.on):hover{background:var(--surface2);color:var(--text)}}
+.menu-pie{margin-top:auto;padding:14px 8px 0;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.menu-salir{border:0;background:var(--surface2);color:var(--text2);font-size:13px;font-weight:500;padding:7px 12px;border-radius:10px}
+@media(hover:hover){.menu-salir:hover{color:var(--text)}}
+.drive-barra{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-bottom:16px}
 .leido{font-size:13px;color:var(--text2)}
 .icono{width:32px;height:32px;border:none;background:none;border-radius:8px;display:grid;place-items:center;color:var(--text2);transition:background .15s}
 .icono:hover:not(:disabled){background:var(--surface2);color:var(--text)}
 .icono:disabled{opacity:.3;cursor:default}
 .icono svg{width:18px;height:18px}
-.btn{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:500;transition:background .15s,border-color .15s}
-.btn:hover:not(:disabled){background:var(--surface2)}
+.btn{border:0;background:var(--surface);box-shadow:var(--shadow);border-radius:12px;min-height:42px;padding:9px 16px;font-size:14px;font-weight:500;transition:background-color .15s,transform .1s}
+.btn:active:not(:disabled){transform:scale(.97)}
+@media(hover:hover){.btn:hover:not(:disabled){background:var(--surface2)}}
 .btn:disabled{opacity:.6;cursor:progress}
-.btn.primario{background:var(--text);color:var(--bg);border-color:var(--text);padding:10px 20px;font-size:14px}
-.btn.primario:hover:not(:disabled){background:var(--text);opacity:.88}
+.btn.primario{background:var(--acento);color:var(--on-acento);box-shadow:none;font-weight:600;padding:10px 20px}
+@media(hover:hover){.btn.primario:hover:not(:disabled){background:var(--acento);opacity:.9}}
+.cuenta{font-size:11.5px;font-weight:600;background:var(--alerta-bg2);color:var(--alerta);border-radius:999px;padding:1px 7px;line-height:18px}
 
-nav.tabs{max-width:1000px;margin:12px auto 0;padding:0 16px;display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto}
-.tab{background:none;border:none;border-bottom:2px solid transparent;padding:10px 12px;font-size:14px;font-weight:500;color:var(--text2);white-space:nowrap;display:flex;align-items:center;gap:6px;transition:color .15s}
-.tab:hover{color:var(--text)}
-.tab.on{color:var(--text);border-bottom-color:var(--text)}
-.cuenta{font-family:var(--mono);font-size:11px;background:var(--alerta-bg2);color:var(--alerta);border-radius:999px;padding:1px 7px}
-
-main{max-width:1000px;margin:0 auto;padding:20px 16px}
+main{max-width:960px;margin:0 auto;padding:32px 32px 96px}
 .modulo{display:none}
 .modulo.on{display:block}
 h2{font-size:22px;font-weight:600;letter-spacing:-0.02em;margin:4px 0 18px;text-wrap:balance}
 h2 .num{font-family:var(--font)}
 
 /* Caja */
-.lista{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.lista{background:var(--surface);border-radius:18px;overflow:hidden}
 .suc{border-top:1px solid var(--border)}
 .suc:first-child{border-top:none}
 .suc-fila{width:100%;display:flex;align-items:center;gap:12px;padding:16px 18px;background:none;border:none;text-align:left;transition:background .15s}
@@ -94,14 +117,14 @@ h2 .num{font-family:var(--font)}
 
 /* Filtros y tablas */
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
-.chip{border:1px solid var(--border);background:var(--surface);color:var(--text2);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:500;transition:background .15s,color .15s}
-.chip:hover{color:var(--text)}
-.chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.chip{border:1px solid transparent;background:var(--surface);color:var(--text2);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:500;transition:background .15s,color .15s}
+@media(hover:hover){.chip:hover{color:var(--text)}}
+.chip.on{background:var(--acento-bg);color:var(--acento);border-color:var(--acento)}
 .totales{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:18px}
 .tot .t-lbl{font-size:13px;color:var(--text2)}
 .tot .num{font-size:18px;font-weight:500;margin-top:2px;display:block}
 .tot.aparte .num{color:var(--text2)}
-.tabla-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow-x:auto}
+.tabla-wrap{background:var(--surface);border-radius:18px;overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th{font-size:12px;font-weight:500;color:var(--text3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
 td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
@@ -130,20 +153,36 @@ td.der,th.der{text-align:right}
 .inicio h2{margin-bottom:10px}
 .inicio p{color:var(--text2);font-size:14px;line-height:1.5;margin-bottom:22px}
 .conectar{display:flex;flex-direction:column;gap:10px}
-.conectar input{font-family:var(--font);font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px;transition:border-color .15s}
-.conectar input::placeholder{color:var(--text2)}
-.conectar input:focus{outline:none;border-color:var(--text)}
+.conectar input{font-family:var(--font);font-size:16px;color:var(--text);background:var(--surface);border:1px solid transparent;border-radius:var(--radius);padding:13px 14px;transition:border-color .15s}
+.conectar input::placeholder{color:var(--text3)}
+.conectar input:focus{outline:none;border-color:var(--acento)}
+.conectar .btn.primario{min-height:50px;font-size:15px}
 .error{color:var(--alerta);font-size:13px;margin-top:14px;line-height:1.5}
 .aviso{margin:0 0 16px;padding:10px 14px;background:var(--alerta-bg);border-radius:var(--radius)}
 
 /* Entrar: sin sesión solo se ve esto */
 .entrar{max-width:360px;margin:14vh auto 0;padding:0 16px;text-align:center}
-.entrar h2{margin-bottom:22px}
-body.sin-sesion main,body.sin-sesion nav.tabs,body.sin-sesion .head-in .btn,body.sin-sesion .leido{display:none!important}
+.entrar-marca{justify-content:center;text-align:left;padding-bottom:28px}
+.entrar h2{margin-bottom:18px}
+body.sin-sesion main{display:none!important}
 body:not(.sin-sesion) .entrar{display:none}
 .quien{font-size:13px;color:var(--text2)}
 
+@media(max-width:1023px){
+  body:not(.sin-sesion){padding-left:0}
+  .menu{position:sticky;top:0;bottom:auto;width:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:12px 12px 0;overflow:visible;
+    background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(14px);backdrop-filter:saturate(1.6) blur(14px)}
+  .marca{flex:1;padding:0 4px 10px}
+  .menu-pie{margin:0;padding:0 0 10px}
+  .menu-ops{order:3;flex-basis:100%;flex-direction:row;gap:4px;overflow-x:auto;margin:0 -12px;padding:0 12px 10px;scrollbar-width:none;overscroll-behavior-x:contain}
+  .menu-ops::-webkit-scrollbar{display:none}
+  .m-grupo{display:none}
+  .m-op{width:auto;flex:none;white-space:nowrap;min-height:40px;padding:6px 14px;gap:7px}
+  .m-ico{display:none}
+  main{padding:20px 16px 96px}
+}
 @media(max-width:640px){
+  .menu-pie .quien{display:none}
   .detalle{grid-template-columns:1fr;gap:18px}
   .totales{gap:18px}
   th:nth-child(2),td:nth-child(2){display:none}
@@ -153,19 +192,14 @@ body:not(.sin-sesion) .entrar{display:none}
 </head>
 <body class="sin-sesion">
 
-<header>
-  <div class="head-in">
-    <h1>Grupo BMA</h1>
-    <span class="leido" id="leido" hidden></span>
-    <button class="btn" id="btn-actualizar" onclick="actualizar()" hidden>Actualizar</button>
-    <input type="file" id="archivos" accept=".xlsx" multiple hidden onchange="leerArchivos(this.files)">
-    <span class="quien" id="quien"></span>
-    <button class="btn btn-cat" id="btn-catalogos" onclick="selSeccion('catalogos')" aria-label="Catálogos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Catálogos</button>
-    <button class="btn" id="btn-salir" onclick="salir()">Salir</button>
-  </div>
-</header>
+<aside class="menu" id="menu" aria-label="Menú">
+  <div class="marca"><span class="logo" aria-hidden="true">B</span><div><b>Administración</b><span>Grupo BMA</span></div></div>
+  <nav class="menu-ops" id="menu-ops"></nav>
+  <div class="menu-pie"><span class="quien" id="quien"></span><button class="menu-salir" id="btn-salir" onclick="salir()">Salir</button></div>
+</aside>
 
 <section class="entrar" id="entrar">
+  <div class="marca entrar-marca"><span class="logo" aria-hidden="true">B</span><div><b>Administración</b><span>Grupo BMA</span></div></div>
   <h2>Entrar</h2>
   <form class="conectar" id="form-entrar" onsubmit="entrar(event)">
     <input id="e-correo" type="text" inputmode="email" spellcheck="false" placeholder="Correo" autocomplete="username" required aria-label="Correo">
@@ -175,22 +209,12 @@ body:not(.sin-sesion) .entrar{display:none}
   <div class="error" id="error-entrar" role="status" hidden></div>
 </section>
 
-<nav class="secciones" id="tabs" hidden aria-label="Secciones">
-  <button class="sec on" data-sec="ventas" onclick="selSeccion('ventas')">Ventas</button>
-  <button class="sec" data-sec="revisar" onclick="selSeccion('revisar')">Revisar <span class="cuenta cuenta-dudas" hidden></span></button>
-</nav>
-<nav class="tabs subtabs" id="subtabs" aria-label="Pestañas">
-  <button class="tab" data-sec="ventas" data-mod="registrar" onclick="selModulo('registrar')">Registrar</button>
-  <button class="tab" data-sec="ventas" data-mod="ventas" onclick="selModulo('ventas')">Historial</button>
-  <button class="tab" data-sec="revisar" data-mod="dudas" onclick="selModulo('dudas')">Dudas <span class="cuenta cuenta-dudas" id="cuenta-dudas" hidden></span></button>
-  <button class="tab" data-sec="revisar" data-mod="caja" onclick="selModulo('caja')">Caja del Drive</button>
-  <button class="tab" data-sec="revisar" data-mod="cobros" onclick="selModulo('cobros')">Cobros del Drive</button>
-  <button class="tab" data-sec="revisar" data-mod="gastos" onclick="selModulo('gastos')">Gastos del Drive</button>
-  <button class="tab" data-sec="revisar" data-mod="revisar" onclick="selModulo('revisar')">Errores del Drive <span class="cuenta" id="cuenta-revisar" hidden></span></button>
-  <button class="tab" data-sec="catalogos" data-mod="personas" onclick="selModulo('personas')">Personas</button>
-</nav>
-
 <main>
+  <div class="drive-barra" id="drive-barra" hidden>
+    <span class="leido" id="leido"></span>
+    <button class="btn" id="btn-actualizar" onclick="actualizar()">Actualizar</button>
+    <input type="file" id="archivos" accept=".xlsx" multiple hidden onchange="leerArchivos(this.files)">
+  </div>
   <div class="error aviso" id="aviso" role="status" hidden></div>
   <section class="inicio" id="inicio">
     <h2>Conecta los reportes de las sucursales</h2>
@@ -535,11 +559,11 @@ if (typeof module !== 'undefined') module.exports = {leerLibro:leerLibro, calcul
 </script>
 
 <script src="bma-logica.js?v=4"></script>
-<script src="bma-ui.js?v=5"></script>
-<script src="personas.js?v=4"></script>
-<script src="ventas.js?v=4"></script>
-<script src="registrar.js?v=1"></script>
-<script src="dudas.js?v=4"></script>
+<script src="bma-ui.js?v=6"></script>
+<script src="personas.js?v=6"></script>
+<script src="ventas.js?v=5"></script>
+<script src="registrar.js?v=2"></script>
+<script src="dudas.js?v=5"></script>
 <script>
 var CLAVE = 'bma.reportes.v1';
 var datos = null;        // lo leido de los Excel: {leido, sucursales:{AGS:{archivo,hojas}}}
@@ -730,9 +754,7 @@ function procesar(fuentes){
 
 function iniciar(){
   calc = calcular(datos);
-  document.getElementById('inicio').hidden = true;
-  ['tabs','btn-actualizar','leido'].forEach(function(id){ document.getElementById(id).hidden = false; });
-  render();
+  ir(opSel, {seguir: true, desdeHistorial: true});
 }
 
 // --- Revisar: por corregir y corregidos ---
@@ -761,23 +783,97 @@ function corregidos(){
 
 // Ventas, Personas y Dudas leen de Supabase (ventas.js, personas.js, dudas.js); las demás, del Drive.
 function moduloNuevo(mod){ return {registrar: window.Registrar, ventas: window.Ventas, personas: window.Personas, dudas: window.Dudas}[mod]; }
-// Dos niveles: sección (Ventas, Revisar, Catálogos) y sus pestañas. Cada sección recuerda su última pestaña.
-var ultimaDe = {ventas: 'registrar', revisar: 'dudas', catalogos: 'personas'};
-function selSeccion(sec){ selModulo(ultimaDe[sec]); }
-function selModulo(mod){
-  moduloSel = mod;
-  var tab = document.querySelector('.subtabs [data-mod="' + mod + '"]'), sec = tab ? tab.dataset.sec : 'ventas';
-  ultimaDe[sec] = mod;
-  document.querySelectorAll('.subtabs .tab').forEach(function(t){ t.hidden = t.dataset.sec !== sec; t.classList.toggle('on', t.dataset.mod === mod); });
-  document.querySelectorAll('.secciones .sec').forEach(function(b){ b.classList.toggle('on', b.dataset.sec === sec); });
-  document.getElementById('btn-catalogos').classList.toggle('on', sec === 'catalogos');
-  var nuevo = moduloNuevo(mod);
-  document.querySelectorAll('.modulo').forEach(function(m){ m.classList.toggle('on', m.id === 'mod-' + mod); });
-  ['btn-actualizar','leido'].forEach(function(id){ document.getElementById(id).hidden = !!nuevo || !calc; });
-  if (nuevo){ document.getElementById('inicio').hidden = true; nuevo.pintar(); return; }
+// Menú por módulos (a la izquierda en computadora, fila arriba en celular). Cada opción es una pantalla;
+// varias opciones pueden usar el mismo módulo (Nueva venta y Registrar pago → Registrar; Clientes, Vendedores y Empleados → Personas).
+// "Reportes del Drive" solo lo ve el admin.
+var ICONOS = {
+  nueva: '<path d="M12 5v14M5 12h14"/>',
+  pago: '<rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M3 10.5h18M7 14.5h4"/>',
+  ventas: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" stroke-width="2.6"/>',
+  clientes: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.3-3.3 3.8-5 7-5s5.7 1.7 7 5"/>',
+  vendedores: '<path d="M3.5 12.5V4.5h8l8.5 8.5-8 8z"/><circle cx="8" cy="9" r="1.3"/>',
+  empleados: '<rect x="3.5" y="7.5" width="17" height="12" rx="2.5"/><path d="M9 7.5V5.5h6v2M3.5 12.5h17"/>',
+  dudas: '<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.6a2.4 2.4 0 1 1 3.3 2.2c-.6.3-1 .8-1 1.5v.3"/><path d="M12 16.8h.01" stroke-width="2.6"/>',
+  caja: '<rect x="3.5" y="8" width="17" height="11" rx="2"/><path d="M5.5 8 7 4.5h10L18.5 8M10 12.5h4"/>',
+  cobros: '<path d="M12 19V5.5M6.5 11 12 5.5 17.5 11"/>',
+  gastos: '<path d="M12 5v13.5M6.5 13 12 18.5 17.5 13"/>',
+  revisar: '<path d="M12 4.5 3 19.5h18z"/><path d="M12 10.5v3.5"/><path d="M12 16.8h.01" stroke-width="2.6"/>'
+};
+var MENU = [
+  {grupo: 'Ventas', ops: [
+    {id: 'nueva', nombre: 'Nueva venta', mod: 'registrar'},
+    {id: 'pago', nombre: 'Registrar pago', mod: 'registrar'},
+    {id: 'ventas', nombre: 'Lista de ventas', mod: 'ventas'}]},
+  {grupo: 'Personas', ops: [
+    {id: 'clientes', nombre: 'Clientes', mod: 'personas', tipo: 'cliente'},
+    {id: 'vendedores', nombre: 'Vendedores', mod: 'personas', tipo: 'vendedor'},
+    {id: 'empleados', nombre: 'Empleados', mod: 'personas', tipo: 'empleado'}]},
+  {grupo: 'Revisar', ops: [
+    {id: 'dudas', nombre: 'Dudas', mod: 'dudas', cuenta: 'cuenta-dudas'}]},
+  {grupo: 'Reportes del Drive', admin: true, ops: [
+    {id: 'caja', nombre: 'Caja', mod: 'caja'},
+    {id: 'cobros', nombre: 'Cobros', mod: 'cobros'},
+    {id: 'gastos', nombre: 'Gastos', mod: 'gastos'},
+    {id: 'revisar', nombre: 'Errores', mod: 'revisar', cuenta: 'cuenta-revisar'}]}
+];
+var opSel = null;
+function opDe(id){
+  var r = null;
+  MENU.forEach(function(g){ g.ops.forEach(function(o){ if (o.id === id) r = o; }); });
+  return r;
+}
+function pintarMenu(){
+  var admin = window.SESION && SESION.rol === 'admin';
+  document.getElementById('menu-ops').innerHTML = MENU.filter(function(g){ return !g.admin || admin; }).map(function(g){
+    return '<div class="m-grupo">' + g.grupo + '</div>' + g.ops.map(function(o){
+      return '<button class="m-op" data-op="' + o.id + '" onclick="ir(\'' + o.id + '\')">' +
+        '<span class="m-ico"><svg viewBox="0 0 24 24" aria-hidden="true">' + ICONOS[o.id] + '</svg></span>' +
+        '<span class="m-nom">' + o.nombre + '</span>' +
+        (o.cuenta ? '<span class="cuenta ' + o.cuenta + '" id="' + o.cuenta + '" hidden></span>' : '') + '</button>';
+    }).join('');
+  }).join('');
+}
+// o.seguir: volver a la pantalla como estaba (p. ej. con la ficha abierta); sin él, la opción del menú abre desde el principio.
+// o.desdeHistorial: viene del botón "atrás" del navegador, no se anota otra vez.
+function ir(id, o){
+  o = o || {};
+  var op = opDe(id); if (!op) return;
+  opSel = id; moduloSel = op.mod;
+  document.querySelectorAll('.m-op').forEach(function(b){
+    var on = b.dataset.op === id;
+    b.classList.toggle('on', on);
+    if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    // En celular el menú es una fila que se desliza: que la opción elegida quede a la vista
+    if (on && b.parentNode.scrollWidth > b.parentNode.clientWidth) b.parentNode.scrollTo({left: b.offsetLeft - 12, behavior: 'smooth'});
+  });
+  if (!o.desdeHistorial){ try { history[o.reemplazar ? 'replaceState' : 'pushState']({op: id}, ''); } catch(e){} }
+  var nuevo = moduloNuevo(op.mod);
+  document.querySelectorAll('.modulo').forEach(function(m){ m.classList.toggle('on', m.id === 'mod-' + op.mod); });
+  document.getElementById('drive-barra').hidden = !!nuevo || !calc;
+  if (!o.seguir) window.scrollTo(0, 0);
+  if (nuevo){
+    document.getElementById('inicio').hidden = true;
+    avisar('');
+    if (op.mod === 'registrar') { if (o.seguir) Registrar.pintar(); else Registrar.abrir(id); }
+    else if (op.mod === 'personas') Personas.deTipo(op.tipo, o.seguir);
+    else if (!o.seguir && nuevo.inicio) nuevo.inicio();
+    else nuevo.pintar();
+    return;
+  }
   if (!calc){ document.getElementById('inicio').hidden = false; return; }
+  document.getElementById('inicio').hidden = true;
   render();
 }
+// Para los módulos que piden "llévame a tal pantalla" sin saber del menú.
+function selModulo(mod){
+  var id = mod;
+  if (mod === 'registrar') id = Registrar.que() || 'nueva';
+  if (mod === 'personas') id = opSel && opDe(opSel).mod === 'personas' ? opSel : 'clientes';
+  ir(id, {seguir: true});
+}
+window.addEventListener('popstate', function(e){
+  if (window.SESION && e.state && e.state.op) ir(e.state.op, {desdeHistorial: true, seguir: true});
+});
 function selSucursal(s){ sucFiltro = s; render(); }
 function selRevisar(v){ revisarVista = v; renderRevisar(); }
 function alternar(s){ abiertas[s] = !abiertas[s]; renderCaja(); }
@@ -795,7 +891,7 @@ function render(){
   document.querySelectorAll('.modulo').forEach(function(m){ m.classList.toggle('on', m.id === 'mod-' + moduloSel); });
   var n = todosLosProblemas().length;
   var cr = document.getElementById('cuenta-revisar');
-  cr.hidden = !n; cr.textContent = n;
+  if (cr){ cr.hidden = !n; cr.textContent = n; }
   if (moduloSel === 'caja') renderCaja();
   if (moduloSel === 'cobros') renderCobros();
   if (moduloSel === 'gastos') renderGastos();
@@ -1021,8 +1117,8 @@ function arrancar(){
   datos = cargarGuardado();
   if (carpetaGuardada()) document.getElementById('carpeta').value = 'https://drive.google.com/drive/folders/' + carpetaGuardada();
   if (datos && datos.sucursales && Object.keys(datos.sucursales).length) calc = calcular(datos);
-  document.getElementById('tabs').hidden = false;
-  selModulo('registrar');
+  pintarMenu();
+  ir('ventas', {reemplazar: true});
   if (window.Dudas) Dudas.contar();
 }
 sb.auth.getSession().then(function(r){

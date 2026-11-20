@@ -30,7 +30,7 @@ Es un control aparte, de solo lectura, sobre los mismos Excel que ya usan las su
 - Pendiente: cuentas por cobrar por cliente (cada cliente con número), préstamos a empleados por separado, subcuentas, inicio de sesión y Supabase antes de capturar datos a mano.
 
 ## Brand Commitments
-Interfaz en español. Muy minimalista, amable e intuitiva; sin leyendas o textos de ayuda salvo que de verdad hagan falta. Misma base visual que la app de GVF (DM Sans / DM Mono, tonos cálidos, modo oscuro).
+Interfaz en español. Muy minimalista, amable e intuitiva; sin leyendas o textos de ayuda salvo que de verdad hagan falta. Menú por módulos y estilo tipo app nativa, parejo con las otras apps del grupo (letra Geist, fondo gris claro, tarjetas blancas, modo oscuro).
 
 ## Evidence on Hand
 Reportes reales en Descargas (`Reporte2026-<SUC> 09-11-26.xlsx`). No hay datos reales en el repositorio, que es público.

@@ -275,6 +275,20 @@
     return {valor: function () { return elegido; }, poner: function (p) { elegido = p; inp.value = p ? p.nombre : ''; }};
   }
 
-  window.UI = {combo: combo, olvidarPersonas: olvidarPersonas, abrirLista: abrirLista, escogerVarios: escogerVarios, pedirTexto: pedirTexto, pedirMonto: pedirMonto,
+  // Filtro desplegable: el nombre en chiquito dentro y a un lado lo elegido ("Sucursal · Todas"); al picarlo abre la lista.
+  function filtro(id, nombre, elegido) {
+    return '<button type="button" class="filtro" id="' + id + '"><span class="filtro-e">' + esc(nombre) + '</span><b>' + esc(elegido) +
+      '</b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>';
+  }
+  // Pestañas tipo iPhone (control segmentado) para cambiar de vista dentro de una pantalla.
+  function seg(id, opciones, valor) {
+    return '<div class="seg" id="' + id + '" role="group">' + opciones.map(function (o) {
+      var on = o.valor === valor;
+      return '<button type="button" class="seg-op' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-valor="' + esc(o.valor) + '">' +
+        esc(o.nombre) + (o.cuenta ? ' <span class="seg-n">' + esc(o.cuenta) + '</span>' : '') + '</button>';
+    }).join('') + '</div>';
+  }
+
+  window.UI = {filtro: filtro, seg: seg, combo: combo, olvidarPersonas: olvidarPersonas, abrirLista: abrirLista, escogerVarios: escogerVarios, pedirTexto: pedirTexto, pedirMonto: pedirMonto,
                confirmar: confirmar, aviso: aviso, llamar: llamar, guardar: guardar, LOCAL: LOCAL};
 })();

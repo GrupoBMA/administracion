@@ -16,13 +16,10 @@
   }
 
   function pintar() {
-    cont().innerHTML = '<div class="barra">' +
-      ['pendiente', 'resuelta'].map(function (v) {
-        return '<button class="filtro" data-vista="' + v + '">' + (st.vista === v ? '<b>' : '') + (v === 'pendiente' ? 'Pendientes' : 'Resueltas') +
-          (st.vista === v ? '</b>' : '') + '</button>';
-      }).join('') + '</div><div id="d-lista"><p class="vacio">Cargando…</p></div>';
-    cont().querySelector('.barra').onclick = function (e) {
-      var b = e.target.closest('[data-vista]'); if (b) { st.vista = b.dataset.vista; pintar(); }
+    cont().innerHTML = UI.seg('d-vista', [{valor: 'pendiente', nombre: 'Pendientes'}, {valor: 'resuelta', nombre: 'Resueltas'}], st.vista) +
+      '<div id="d-lista"><p class="vacio">Cargando…</p></div>';
+    $('d-vista').onclick = function (e) {
+      var b = e.target.closest('[data-valor]'); if (b && b.dataset.valor !== st.vista) { st.vista = b.dataset.valor; pintar(); }
     };
     UI.llamar('bma_dudas', {p_estado: st.vista}).then(function (ds) {
       var el = $('d-lista'); if (!el) return;
@@ -31,8 +28,9 @@
       ds.forEach(function (d) { (grupos[d.motivo] = grupos[d.motivo] || []).push(d); });
       el.innerHTML = Object.keys(grupos).map(function (m) {
         var abierto = st.abiertos[m] || Object.keys(grupos).length === 1;
-        return '<div class="seccion"><button class="volver" data-grupo="' + esc(m) + '">' + (abierto ? '▾ ' : '▸ ') +
-          esc(BMA.MOTIVOS[m] || m) + ' · ' + grupos[m].length + '</button></div>' +
+        return '<button class="d-grupo' + (abierto ? ' abierto' : '') + '" data-grupo="' + esc(m) + '" aria-expanded="' + abierto + '">' +
+          '<span class="d-mot">' + esc(BMA.MOTIVOS[m] || m) + '</span><span class="d-n">' + grupos[m].length + '</span>' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>' +
           (abierto ? '<div class="renglones">' + grupos[m].map(duda).join('') + '</div>' : '');
       }).join('');
       el.onclick = function (e) {

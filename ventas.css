@@ -77,6 +77,8 @@ html.hoja-on{overflow:hidden}
 .cifra .e{font-size:12px;color:var(--text2)}
 .cifra .v{font-family:var(--mono);font-size:17px;margin-top:2px}
 .cifra.falta .v{color:var(--alerta)}
+.cifra .v.texto{font-family:var(--font);font-size:14px;color:var(--alerta)}
+button.cifra{border:0;text-align:left;width:auto;padding:10px 12px;display:block}
 .seccion{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin:18px 0 8px}
 .mov{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:10px 0;border-top:1px solid var(--border)}
 .mov .t{font-weight:600}

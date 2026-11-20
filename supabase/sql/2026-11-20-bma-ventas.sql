@@ -70,8 +70,8 @@ language plpgsql stable security definer set search_path to '' as $$
 declare q text := bma.sin_acentos(btrim(coalesce(p_q, ''))); num text := bma.num_remision(p_q); out jsonb;
 begin
   perform bma.rol_actual();
-  select coalesce(jsonb_agg(x order by s.ultimo desc nulls last, s.folio desc), '[]') into out from (
-    select v.folio, m.ultimo, jsonb_build_object('id', v.id, 'folio', v.folio, 'sucursal', v.sucursal, 'fecha', v.fecha,
+  select coalesce(jsonb_agg(x order by s.semana desc nulls last, s.folio desc), '[]') into out from (
+    select v.folio, m.semana, jsonb_build_object('id', v.id, 'folio', v.folio, 'sucursal', v.sucursal, 'fecha', v.fecha,
       'producto', v.producto, 'linea', v.linea,
       'cliente', case when c.id is null then null else jsonb_build_object('id', c.id, 'numero', c.numero, 'nombre', c.nombre) end,
       'vendedor', ve.nombre, 'remision', v.remision, 'factura', v.factura, 'estado', v.estado, 'precio_total', v.precio_total,
@@ -80,11 +80,12 @@ begin
     from bma.ventas v
     left join bma.personas c on c.id = v.cliente_id
     left join bma.personas ve on ve.id = v.vendedor_id
-    left join lateral (select bma.pagado(v.id) pagado, max(fecha) ultimo from bma.movimientos where venta_id = v.id) m on true
+    -- se ordena por la semana del reporte (lunes), no por la fecha: hay fechas mal capturadas en los Excel
+    left join lateral (select bma.pagado(v.id) pagado, max(fecha) ultimo, max(lunes) semana from bma.movimientos where venta_id = v.id) m on true
     where (p_sucursal is null or v.sucursal = p_sucursal) and (p_estado is null or v.estado = p_estado)
       and (q = '' or bma.sin_acentos(concat_ws(' ', v.folio, v.producto, v.factura, c.nombre, ve.nombre)) like '%' || q || '%'
            or (num is not null and (bma.num_remision(v.remision) = num or c.numero::text = num)))
-    order by m.ultimo desc nulls last, v.folio desc
+    order by m.semana desc nulls last, v.folio desc
     limit greatest(1, least(coalesce(p_limite, 100), 500))) s;
   return out;
 end $$;

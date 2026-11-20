@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Subir importación</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+  :root{--bg:#F7F4EF;--text:#1F1B16;--text2:#6B635A;--border:#E2DDD6;--alerta:#B4442B}
+  @media(prefers-color-scheme:dark){:root{--bg:#141210;--text:#EDE7DF;--text2:#A39A8F;--border:#32302C;--alerta:#E07A5F}}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,sans-serif}
+  main{max-width:520px;margin:10vh auto 0;padding:0 16px}
+  button{font:inherit;border:1px solid var(--text);background:var(--text);color:var(--bg);border-radius:999px;padding:10px 20px;cursor:pointer}
+  button:disabled{opacity:.5;cursor:progress}
+  pre{white-space:pre-wrap;border-top:1px solid var(--border);padding-top:12px;color:var(--text2);font-size:13px}
+  .error{color:var(--alerta)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Subir importación de 2026</h1>
+  <p id="quien">Revisando la sesión…</p>
+  <button id="subir" disabled>Subir</button>
+  <pre id="log"></pre>
+</main>
+<script>
+// Herramienta local: sube .local/importacion/lotes.json (lo genera importar/cargar.py) con la sesión del admin.
+// Supabase solo lo acepta de una cuenta admin y mientras no haya nada capturado a mano.
+var sb = window.supabase.createClient('https://jlfendrdwptwmttrahre.supabase.co',
+  'sb_publishable_RNnR7jV42dGEGLFWdRVfvQ_cP1xSwuO', {auth: {persistSession: true, autoRefreshToken: true}});
+var ORDEN = ['personas', 'ventas', 'movimientos', 'apartados', 'dudas_importacion'];
+var LOTE = 400;
+var $ = function(id){ return document.getElementById(id); };
+function log(t, error){ var s = document.createElement('div'); s.textContent = t; if (error) s.className = 'error'; $('log').appendChild(s); }
+
+sb.rpc('bma_sesion').then(function(r){
+  if (r.error || !r.data){ $('quien').textContent = 'Entra primero como admin en la app (localhost:8765) y vuelve a abrir esta página.'; return; }
+  if (r.data.rol !== 'admin'){ $('quien').textContent = r.data.nombre + ' no es admin: solo el admin puede importar.'; return; }
+  $('quien').textContent = 'Sesión: ' + r.data.nombre + ' (admin)';
+  $('subir').disabled = false;
+});
+
+$('subir').addEventListener('click', async function(){
+  $('subir').disabled = true; $('log').textContent = '';
+  try {
+    var datos = await fetch('../.local/importacion/lotes.json', {cache: 'no-store'}).then(function(x){
+      if (!x.ok) throw new Error('No encontré .local/importacion/lotes.json: corre importar/cargar.py');
+      return x.json();
+    });
+    var b = await sb.rpc('bma_importar_empezar');
+    if (b.error) throw new Error(b.error.message);
+    log('Se borró lo importado antes: ' + JSON.stringify(b.data));
+    for (var t of ORDEN){
+      var filas = datos[t] || [], n = 0;
+      for (var i = 0; i < filas.length; i += LOTE){
+        var r = await sb.rpc('bma_importar_lote', {p_tabla: t, p_filas: filas.slice(i, i + LOTE)});
+        if (r.error) throw new Error(t + ' (renglón ' + (i + 1) + '): ' + r.error.message);
+        n += r.data;
+      }
+      log(t + ': ' + n + ' de ' + filas.length);
+    }
+    log('Listo.');
+  } catch (e) {
+    log('Se detuvo: ' + e.message + '. Puedes volver a darle Subir: empieza borrando lo importado.', true);
+  }
+  $('subir').disabled = false;
+});
+</script>
+</body>
+</html>

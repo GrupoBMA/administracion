@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&amp;family=DM+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
@@ -134,6 +135,13 @@ td.der,th.der{text-align:right}
 .error{color:var(--alerta);font-size:13px;margin-top:14px;line-height:1.5}
 .aviso{margin:0 0 16px;padding:10px 14px;background:var(--alerta-bg);border-radius:var(--radius)}
 
+/* Entrar: sin sesión solo se ve esto */
+.entrar{max-width:360px;margin:14vh auto 0;padding:0 16px;text-align:center}
+.entrar h2{margin-bottom:22px}
+body.sin-sesion main,body.sin-sesion nav.tabs,body.sin-sesion .head-in .btn,body.sin-sesion .leido{display:none!important}
+body:not(.sin-sesion) .entrar{display:none}
+.quien{font-size:13px;color:var(--text2)}
+
 @media(max-width:640px){
   .detalle{grid-template-columns:1fr;gap:18px}
   .totales{gap:18px}
@@ -142,7 +150,7 @@ td.der,th.der{text-align:right}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
-<body>
+<body class="sin-sesion">
 
 <header>
   <div class="head-in">
@@ -150,8 +158,20 @@ td.der,th.der{text-align:right}
     <span class="leido" id="leido" hidden></span>
     <button class="btn" id="btn-actualizar" onclick="actualizar()" hidden>Actualizar</button>
     <input type="file" id="archivos" accept=".xlsx" multiple hidden onchange="leerArchivos(this.files)">
+    <span class="quien" id="quien"></span>
+    <button class="btn" id="btn-salir" onclick="salir()">Salir</button>
   </div>
 </header>
+
+<section class="entrar" id="entrar">
+  <h2>Entrar</h2>
+  <form class="conectar" id="form-entrar" onsubmit="entrar(event)">
+    <input id="e-correo" type="text" inputmode="email" spellcheck="false" placeholder="Correo" autocomplete="username" required aria-label="Correo">
+    <input id="e-pass" type="password" placeholder="Contraseña" autocomplete="current-password" required aria-label="Contraseña">
+    <button class="btn primario" id="btn-entrar" type="submit">Entrar</button>
+  </form>
+  <div class="error" id="error-entrar" role="status" hidden></div>
+</section>
 
 <nav class="tabs" id="tabs" hidden>
   <button class="tab on" data-mod="caja" onclick="selModulo('caja')">Caja</button>
@@ -915,9 +935,63 @@ function renderRevisar(){
   document.getElementById('mod-revisar').innerHTML = h;
 }
 
-datos = cargarGuardado();
-if (carpetaGuardada()) document.getElementById('carpeta').value = 'https://drive.google.com/drive/folders/' + carpetaGuardada();
-if (datos && datos.sucursales && Object.keys(datos.sucursales).length) iniciar();
+// ---------- Sesión ----------
+// Los datos viven en el esquema bma de Supabase, sin acceso directo desde la API: solo entran las
+// cuentas dadas de alta en bma.usuarios (public.bma_sesion). La llave es la pública: sin sesión no da nada.
+var SUPABASE_URL = 'https://jlfendrdwptwmttrahre.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_RNnR7jV42dGEGLFWdRVfvQ_cP1xSwuO';
+var DOMINIO = '@administracion.bma';      // "usuario" -> usuario@administracion.bma
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth: {persistSession: true, autoRefreshToken: true}});
+var SESION = null;                         // {nombre, rol}
+
+function errorEntrar(msg){
+  var e = document.getElementById('error-entrar');
+  e.textContent = msg || ''; e.hidden = !msg;
+}
+function entrar(ev){
+  ev.preventDefault();
+  var correo = document.getElementById('e-correo').value.trim().toLowerCase();
+  if (correo && correo.indexOf('@') < 0) correo += DOMINIO;
+  var btn = document.getElementById('btn-entrar');
+  btn.disabled = true; errorEntrar('');
+  sb.auth.signInWithPassword({email: correo, password: document.getElementById('e-pass').value}).then(function(r){
+    btn.disabled = false;
+    if (r.error){ errorEntrar('Correo o contraseña incorrectos.'); return; }
+    document.getElementById('e-pass').value = '';
+    abrirSesion();
+  });
+}
+function abrirSesion(){
+  sb.rpc('bma_sesion').then(function(r){
+    if (r.error){
+      sb.auth.signOut();
+      document.body.classList.add('sin-sesion');
+      errorEntrar(r.error.code === '42501' ? 'Esta cuenta no tiene acceso a la administración.' : 'No se pudo entrar. Intenta de nuevo.');
+      return;
+    }
+    SESION = r.data;
+    document.getElementById('quien').textContent = SESION.nombre;
+    document.body.classList.remove('sin-sesion');
+    arrancar();
+  });
+}
+function salir(){
+  sb.auth.signOut().then(function(){
+    SESION = null;
+    document.getElementById('quien').textContent = '';
+    document.body.classList.add('sin-sesion');
+    document.getElementById('e-correo').focus();
+  });
+}
+function arrancar(){
+  datos = cargarGuardado();
+  if (carpetaGuardada()) document.getElementById('carpeta').value = 'https://drive.google.com/drive/folders/' + carpetaGuardada();
+  if (datos && datos.sucursales && Object.keys(datos.sucursales).length) iniciar();
+}
+sb.auth.getSession().then(function(r){
+  if (r.data && r.data.session) abrirSesion();
+  else document.getElementById('e-correo').focus();
+});
 </script>
 </body>
 </html>

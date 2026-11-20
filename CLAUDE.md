@@ -24,7 +24,7 @@ Producto, usuario y principios: ver `PRODUCT.md`. Diseño: muy minimalista, amab
 
 **Prohibido modificar, mover o borrar cualquier archivo del Drive** (ni los Excel de las sucursales ni nada más), tanto desde la app como al trabajar con Claude. Solo se extrae. La app lee el Drive con permiso `drive.readonly` (Google bloquea cualquier escritura) o abre archivos locales con un `<input type=file>`; no sube ni escribe nada. Al probar, trabajar sobre copias en `.local/` (ignorada por git) y borrarlas al terminar.
 
-## Estado actual (3-nov-2026)
+## Estado actual (3-nov-2026; ver "Base de datos e inicio de sesión" para lo del 20-nov)
 
 `index.html` lee los reportes semanales de las sucursales y muestra cuatro pestañas con **vista general, sin semanas** (decisión del 3-nov-2026): **Caja**, **Cobros**, **Gastos** y **Revisar**. Sin Supabase ni inicio de sesión todavía.
 
@@ -60,7 +60,7 @@ Los reportes son **Google Sheets** en una carpeta compartida con una cuenta de G
 - Estilo de GVF: DM Sans / DM Mono, tonos cálidos, modo oscuro por `prefers-color-scheme`; tokens `--alerta*` para cajas arriba del límite.
 
 ### Probar
-`.claude/launch.json` levanta `python -m http.server 8765`. Para datos reales, copiar los Excel a `.local/` y crear `File` con `fetch` desde la consola, o correr el lector en Node con la misma copia de SheetJS. Nunca subir datos reales: el repo es público.
+`.claude/launch.json` levanta `python -m http.server 8765 --bind 127.0.0.1` (solo esta computadora: el servidor también sirve `.local/` con datos reales). Para datos reales, copiar los Excel a `.local/` y crear `File` con `fetch` desde la consola, o correr el lector en Node con la misma copia de SheetJS. Nunca subir datos reales: el repo es público.
 
 ### Pendiente
 Cuentas por cobrar por cliente (cada cliente con número), préstamos a empleados por separado, subcuentas, semanas anteriores al 5 de octubre, inventario, Supabase e inicio de sesión.
@@ -73,16 +73,20 @@ Cuentas por cobrar por cliente (cada cliente con número), préstamos a empleado
 - Antes vivía en la carpeta `grupo-bma/` del repo `Golden-Valley-Farms/Finanzas` (GVF); el historial se trajo con `git subtree split`.
 - Flujo igual que GVF: editar, commit descriptivo, `git push origin main`, y decirle al usuario dónde mirar en la página en vivo.
 
-## Datos y seguridad (pendiente)
+## Base de datos e inicio de sesión (20-nov-2026)
 
-Decisión del usuario (24-oct-2026): **por ahora no hay inicio de sesión ni Supabase**; se arma la estructura primero. Antes de capturar el primer dato real:
+Rumbo decidido el 19-nov-2026 (diseño en `docs/superpowers/specs/2026-11-19-ventas-silvia-design.md`): la app hace lo que hoy hace Silvia en sus Excel (`FImp<SUC>-2026.xlsx`, en su computadora personal): ventas con su historial de movimientos, personas, y después caja, gastos, préstamos y banco. **La app dejará de leer el Drive**; Silvia captura. Plan de esta etapa: `docs/superpowers/plans/2026-11-20-base-e-importacion.md`.
 
-1. Mismo proyecto de Supabase que GVF (`jlfendrdwptwmttrahre`), pero con las tablas **separadas** de GVF (esquema propio, nombre tentativo `bma`; hay que exponerlo en la API de Supabase).
-2. **Inicio de sesión propio**: no usar el correo ni la contraseña de GVF.
-3. RLS en todas las tablas, compuerta de sesión al arrancar y candado de escrituras en `localhost`, como en GVF.
-4. Supabase es la fuente de verdad: nada vive solo en `localStorage`.
+- **Supabase**, mismo proyecto que GVF (`jlfendrdwptwmttrahre`), esquema **`bma` sin exponer en la API**: nadie lee las tablas directo (revoke a `anon`/`authenticated` y RLS encendido sin políticas). Se entra solo por funciones `public.bma_*` (`security definer`), igual que Logística. SQL en `supabase/sql/2026-11-20-bma-*.sql`; pruebas en `tests/bma-base.sql` y `tests/bma-importar.sql` (se corren completas con `execute_sql` y terminan en `rollback`).
+- Tablas: `usuarios` (rol `admin` o `captura`), `sucursales` (11; GDL = almacén `S-WAS` en Odoo), `personas` (número propio, tipos cliente/empleado/vendedor), `ventas` (folio `SUC-AÑO-NNNN`, estado abierta/cerrada/cancelada), `movimientos` (contado, anticipo, abono, liquidación, cancelación, entrega, devolución; monto siempre ≥ 0, la devolución resta), `apartados` (préstamos e inventario que venían en el Excel), `dudas_importacion` y `bitacora` (alta/cambio/baja con antes y después; la escribe un trigger, no la pantalla; no anota mientras `bma.importando = 'si'`).
+- Funciones: `bma_sesion()` (nombre y rol; `42501` si la cuenta no está dada de alta), `bma_importar_empezar()` y `bma_importar_lote(tabla, filas)` (solo admin y solo mientras la importación esté abierta), `bma_borrar_importado()` (solo `postgres`). **La importación se cierra sola** en cuanto haya algo con `origen = 'capturada'` o cualquier fila en la bitácora. Supabase rechaza `DELETE` sin `WHERE` en peticiones de la API: usar `where true`.
+- Cuentas: una admin (el usuario) y una captura (Silvia), creadas en Supabase Auth por el usuario con el dominio `@administracion.bma`; en Entrar basta con escribir el usuario sin dominio. Los correos exactos no van en este repo público. Nunca guardar contraseñas.
+- La app pide iniciar sesión antes de todo (`body.sin-sesion`); las pestañas de siempre (Caja, Cobros, Gastos, Revisar, que aún leen el Drive) siguen detrás del inicio de sesión hasta que la etapa 5 las reemplace.
 
-Como el repo es público, **no capturar datos reales** mientras no exista ese inicio de sesión.
+### Importación de 2026 (`importar/`)
+- `lector.py` lee los Excel de Silvia (columnas por título; la columna sin título a la derecha de MÉTODO es su "OK" del banco). `hilar.py` arma ventas y movimientos: une anticipo → abonos → liquidación por sucursal + línea (motos/pasto/otro) + número de remisión (solo dígitos: "NV 21" = "21") + 180 días, y primero por la nota de Silvia ("ANT 24 SEP NV 133 $30,000"), que en Morelia trae la remisión del anticipo distinta a la de la liquidación. **Silvia escribe notas en la columna VENDEDOR**: el vendedor es la primera palabra si aparece en ≥ 5 renglones; lo demás es nota. "Solo entrega/factura/envío" traen el valor de la mercancía, no un cobro: entran como entrega con monto 0 y el valor en la nota. Solo un monto negativo es devolución. `cargar.py` genera `.local/importacion/lotes.json` y `resumen.txt`; `importar/subir.html` (local, con la sesión del admin) lo sube. Pruebas: `python -m unittest discover -s importar`.
+- Cargada el 19-nov-2026: 3,107 ventas, 3,618 movimientos, 13 vendedores, 90 apartados y 307 dudas. Entregas y devoluciones solo se ligan a una venta de los últimos 180 días; un cobro sin producto es venta propia con duda `sin_producto`; un monto que no se puede leer no se inventa: duda `monto_ilegible`. Si una subida se detiene a la mitad, volver a darle Subir antes de capturar nada (la importación no es atómica). Cuadra al centavo por sucursal con el dinero de los Excel menos lo apartado. Solo AGS, MAZ, MLM, PUE, QRO y TEP; GDL, ZAP, NAU, LPZ y TIJ empiezan vacías (decisión del usuario).
+- Los Excel y lo generado viven solo en `.local/` (ignorada); nunca en el repo, que es público.
 
 ## Reglas de negocio
 

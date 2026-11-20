@@ -1,3 +1,5 @@
 # Datos reales de prueba y capturas: nunca al repo (es publico)
 .local/
 .impeccable/review/
+.superpowers/
+__pycache__/

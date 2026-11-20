@@ -262,17 +262,23 @@
     } catch (e) { /* el aviso ya se mostró */ }
   }
 
+  // Busca y escoge una venta. -> Promise(id|null). Lo usan Registrar y Dudas.
+  async function buscarVenta(titulo, sucursal) {
+    var q = await UI.pedirTexto({titulo: titulo || '¿De qué venta?', placeholder: 'Folio, remisión, factura, producto o cliente', boton: 'Buscar'});
+    if (cancelado(q)) return null;
+    var vs = await UI.llamar('bma_ventas_buscar', {p_q: q, p_sucursal: sucursal || null, p_estado: null, p_limite: 50});
+    if (!vs.length) { UI.aviso('No encontré ventas con "' + q + '"', true); return null; }
+    var id = await UI.abrirLista({titulo: 'Escoge la venta', buscar: vs.length > 8, grupos: [{opciones: vs.map(function (v) {
+      return {valor: v.id, nombre: v.producto, detalle: v.folio + ' · ' + (v.cliente ? v.cliente.nombre : 'Sin cliente') +
+        (v.remision ? ' · rem. ' + v.remision : '') + ' · ' + BMA.etiquetaEstado(v).texto};
+    })}]});
+    return cancelado(id) ? null : id;
+  }
+
   async function escogerVenta() {
     try {
-      var q = await UI.pedirTexto({titulo: '¿De qué venta?', placeholder: 'Folio, remisión, factura, producto o cliente', boton: 'Buscar'});
-      if (cancelado(q)) return;
-      var vs = await UI.llamar('bma_ventas_buscar', {p_q: q, p_sucursal: null, p_estado: null, p_limite: 50});
-      if (!vs.length) { UI.aviso('No encontré ventas con "' + q + '"', true); return; }
-      var id = await UI.abrirLista({titulo: 'Escoge la venta', buscar: vs.length > 8, grupos: [{opciones: vs.map(function (v) {
-        return {valor: v.id, nombre: v.producto, detalle: v.folio + ' · ' + (v.cliente ? v.cliente.nombre : 'Sin cliente') +
-          (v.remision ? ' · rem. ' + v.remision : '') + ' · ' + BMA.etiquetaEstado(v).texto};
-      })}]});
-      if (cancelado(id)) return;
+      var id = await buscarVenta();
+      if (!id) return;
       var r = await UI.llamar('bma_venta', {p_id: id});
       abrir(id);
       agregarMovimiento(r.venta);
@@ -286,6 +292,6 @@
       .then(function (v) { if (v === 'nueva') ventaNueva(); else if (v === 'mov') escogerVenta(); });
   }
 
-  window.Ventas = {pintar: pintar, abrir: abrir, registrar: registrar, agregarMovimiento: agregarMovimiento,
+  window.Ventas = {pintar: pintar, abrir: abrir, registrar: registrar, agregarMovimiento: agregarMovimiento, buscarVenta: buscarVenta,
                    recargar: function () { if (st.ficha) pintarFicha(st.ficha); else lista(); }};
 })();

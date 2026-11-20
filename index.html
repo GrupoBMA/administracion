@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="ventas.css?v=1">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
@@ -174,7 +175,10 @@ body:not(.sin-sesion) .entrar{display:none}
 </section>
 
 <nav class="tabs" id="tabs" hidden>
-  <button class="tab on" data-mod="caja" onclick="selModulo('caja')">Caja</button>
+  <button class="tab on" data-mod="ventas" onclick="selModulo('ventas')">Ventas</button>
+  <button class="tab" data-mod="personas" onclick="selModulo('personas')">Personas</button>
+  <button class="tab" data-mod="dudas" onclick="selModulo('dudas')">Dudas <span class="cuenta" id="cuenta-dudas" hidden></span></button>
+  <button class="tab" data-mod="caja" onclick="selModulo('caja')">Caja</button>
   <button class="tab" data-mod="cobros" onclick="selModulo('cobros')">Cobros</button>
   <button class="tab" data-mod="gastos" onclick="selModulo('gastos')">Gastos</button>
   <button class="tab" data-mod="revisar" onclick="selModulo('revisar')">Revisar <span class="cuenta" id="cuenta-revisar" hidden></span></button>
@@ -192,6 +196,9 @@ body:not(.sin-sesion) .entrar{display:none}
     <button class="mas" onclick="escogerArchivos()">O escoge los archivos de tu computadora</button>
     <div class="error" id="error-inicio" role="status" hidden></div>
   </section>
+  <section class="modulo" id="mod-ventas"></section>
+  <section class="modulo" id="mod-personas"></section>
+  <section class="modulo" id="mod-dudas"></section>
   <section class="modulo" id="mod-caja"></section>
   <section class="modulo" id="mod-cobros"></section>
   <section class="modulo" id="mod-gastos"></section>
@@ -520,12 +527,17 @@ function dinero(n){
 if (typeof module !== 'undefined') module.exports = {leerLibro:leerLibro, calcular:calcular, clasificarCobro:clasificarCobro};
 </script>
 
+<script src="bma-logica.js?v=1"></script>
+<script src="bma-ui.js?v=1"></script>
+<script src="personas.js?v=1"></script>
+<script src="ventas.js?v=1"></script>
+<script src="dudas.js?v=1"></script>
 <script>
 var CLAVE = 'bma.reportes.v1';
 var datos = null;        // lo leido de los Excel: {leido, sucursales:{AGS:{archivo,hojas}}}
 var calc = null;         // resultado de calcular(datos)
 var revisarVista = 'pendientes';
-var moduloSel = 'caja';
+var moduloSel = 'ventas';
 var sucFiltro = 'todas';
 var abiertas = {};
 var verApartados = false;
@@ -739,9 +751,16 @@ function corregidos(){
   return Object.keys(g).map(function(k){ return g[k]; }).filter(function(p){ return p.corregido; });
 }
 
+// Ventas, Personas y Dudas leen de Supabase (ventas.js, personas.js, dudas.js); las demás, del Drive.
+function moduloNuevo(mod){ return {ventas: window.Ventas, personas: window.Personas, dudas: window.Dudas}[mod]; }
 function selModulo(mod){
   moduloSel = mod;
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('on', t.dataset.mod === mod); });
+  var nuevo = moduloNuevo(mod);
+  document.querySelectorAll('.modulo').forEach(function(m){ m.classList.toggle('on', m.id === 'mod-' + mod); });
+  ['btn-actualizar','leido'].forEach(function(id){ document.getElementById(id).hidden = !!nuevo || !calc; });
+  if (nuevo){ document.getElementById('inicio').hidden = true; nuevo.pintar(); return; }
+  if (!calc){ document.getElementById('inicio').hidden = false; return; }
   render();
 }
 function selSucursal(s){ sucFiltro = s; render(); }
@@ -986,7 +1005,10 @@ function salir(){
 function arrancar(){
   datos = cargarGuardado();
   if (carpetaGuardada()) document.getElementById('carpeta').value = 'https://drive.google.com/drive/folders/' + carpetaGuardada();
-  if (datos && datos.sucursales && Object.keys(datos.sucursales).length) iniciar();
+  if (datos && datos.sucursales && Object.keys(datos.sucursales).length) calc = calcular(datos);
+  document.getElementById('tabs').hidden = false;
+  selModulo('ventas');
+  if (window.Dudas) Dudas.contar();
 }
 sb.auth.getSession().then(function(r){
   if (r.data && r.data.session) abrirSesion();

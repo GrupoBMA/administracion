@@ -29,7 +29,7 @@ test('saldo', () => {
 
 test('etiquetaEstado', () => {
   assert.deepEqual(B.etiquetaEstado({estado: 'abierta', precio_total: 1}), {texto: 'Abierta', clase: 'abierta'});
-  assert.deepEqual(B.etiquetaEstado({estado: 'abierta', precio_total: null}), {texto: 'Abierta · precio por confirmar', clase: 'abierta'});
+  assert.deepEqual(B.etiquetaEstado({estado: 'abierta', precio_total: null}), {texto: 'Abierta', clase: 'abierta'});
   assert.deepEqual(B.etiquetaEstado({estado: 'cerrada'}), {texto: 'Cerrada', clase: 'cerrada'});
   assert.deepEqual(B.etiquetaEstado({estado: 'cancelada'}), {texto: 'Cancelada', clase: 'cancelada'});
 });

@@ -35,10 +35,12 @@
 
   function renglon(v) {
     var e = BMA.etiquetaEstado(v);
-    return '<button class="renglon" data-id="' + esc(v.id) + '"><span class="prin">' + esc(v.producto) + '</span>' +
+    // La remisión va a la izquierda del modelo, para ubicar la venta como la ubica Silvia
+    return '<button class="renglon" data-id="' + esc(v.id) + '"><span class="prin">' +
+      (v.remision ? '<span class="rem">Rem. ' + esc(v.remision) + '</span>' : '') + esc(v.producto) + '</span>' +
       '<span class="der num">' + BMA.dinero(v.pagado) + '</span>' +
       '<span class="sec">' + esc(v.folio) + ' · ' + esc(v.cliente ? v.cliente.nombre : 'Sin cliente') +
-      (v.remision ? ' · rem. ' + esc(v.remision) : '') + (v.ultimo ? ' · ' + BMA.fecha(v.ultimo) : '') + '</span>' +
+      (v.ultimo ? ' · ' + BMA.fecha(v.ultimo) : '') + '</span>' +
       '<span class="sec der">' + (v.dudas ? '<span class="marca-duda">Duda</span> ' : '') +
       '<span class="chip-estado ' + e.clase + '">' + esc(e.texto) + '</span></span></button>';
   }

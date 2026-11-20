@@ -51,7 +51,7 @@
   function etiquetaEstado(v) {
     if (v.estado === 'cancelada') return {texto: 'Cancelada', clase: 'cancelada'};
     if (v.estado === 'cerrada') return {texto: 'Cerrada', clase: 'cerrada'};
-    return {texto: num(v.precio_total) === null ? 'Abierta · precio por confirmar' : 'Abierta', clase: 'abierta'};
+    return {texto: 'Abierta', clase: 'abierta'};
   }
 
   var TIPOS = [

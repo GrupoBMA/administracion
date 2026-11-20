@@ -59,6 +59,11 @@ test('textoCambio describe solo lo que cambió, con nombres', () => {
   assert.deepEqual(B.textoCambio({accion: 'alta', despues: {tipo: 'abono', monto: 500}}, {}), ['Se registró']);
 });
 
+test('SUCURSALES son las 11 de la base', () => {
+  assert.deepEqual(B.SUCURSALES.map(s => s.valor), ['AGS', 'GDL', 'LPZ', 'MAZ', 'MLM', 'NAU', 'PUE', 'QRO', 'TEP', 'TIJ', 'ZAP']);
+  assert.equal(B.nombreDe(B.SUCURSALES, 'MLM'), 'Morelia');
+});
+
 test('MOTIVOS tiene texto para cada motivo de duda', () => {
   for (const m of ['sin_anticipo', 'varias_candidatas', 'sin_tipo_pago', 'entrega_sin_venta', 'cancelada_sin_venta',
                    'vendedor_parecido', 'sin_remision', 'monto_ilegible', 'sin_producto']) {

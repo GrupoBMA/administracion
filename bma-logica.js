@@ -68,6 +68,12 @@
     {valor: 'tarjeta', nombre: 'Tarjeta'}, {valor: 'deposito', nombre: 'Depósito'},
     {valor: 'mercado_pago', nombre: 'Mercado Pago'}, {valor: 'cheque', nombre: 'Cheque'}
   ];
+  var SUCURSALES = [
+    {valor: 'AGS', nombre: 'Aguascalientes'}, {valor: 'GDL', nombre: 'Guadalajara'}, {valor: 'LPZ', nombre: 'La Paz'},
+    {valor: 'MAZ', nombre: 'Mazatlán'}, {valor: 'MLM', nombre: 'Morelia'}, {valor: 'NAU', nombre: 'Naucalpan'},
+    {valor: 'PUE', nombre: 'Puebla'}, {valor: 'QRO', nombre: 'Querétaro'}, {valor: 'TEP', nombre: 'Tepic'},
+    {valor: 'TIJ', nombre: 'Tijuana'}, {valor: 'ZAP', nombre: 'Zapopan'}
+  ];
   function nombreDe(lista, valor) {
     for (var i = 0; i < lista.length; i++) if (lista[i].valor === valor) return lista[i].nombre;
     return valor || '';
@@ -132,6 +138,6 @@
   };
 
   return {esc: esc, num: num, dinero: dinero, fecha: fecha, lunesDe: lunesDe, hoy: hoy, saldo: saldo,
-          etiquetaEstado: etiquetaEstado, TIPOS: TIPOS, METODOS: METODOS, nombreDe: nombreDe,
+          etiquetaEstado: etiquetaEstado, TIPOS: TIPOS, METODOS: METODOS, SUCURSALES: SUCURSALES, nombreDe: nombreDe,
           validarMovimiento: validarMovimiento, textoCambio: textoCambio, MOTIVOS: MOTIVOS};
 });

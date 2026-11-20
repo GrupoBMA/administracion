@@ -178,3 +178,25 @@ button.cifra{border:0;text-align:left;width:auto;padding:10px 12px;display:block
   .renglon{padding:13px 16px}
   .renglon .sec.der{grid-column:1/-1;text-align:left}
 }
+
+/* ---------- Egresos ---------- */
+.escoger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:48px;border:1px solid transparent;background:var(--surface2);
+  border-radius:var(--radius);padding:10px 12px 10px 14px;font-size:16px;color:var(--text);text-align:left;transition:border-color .15s}
+.escoger.vacio{color:var(--text3)}
+.escoger svg{width:18px;height:18px;flex:none;stroke:var(--text2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media(hover:hover){.escoger:hover{border-color:var(--border)}}
+.lbl .escoger{margin-top:0}
+.nota-paso{font-size:14px;color:var(--text2);margin-top:10px}
+.totales-eg{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;font-size:14px;color:var(--text2);margin:2px 2px 12px}
+.totales-eg b{font-size:20px;font-weight:600;color:var(--text);margin-right:4px}
+.aclarar-n{color:var(--alerta);font-weight:500}
+.semana{font-size:13px;font-weight:600;color:var(--text2);background:var(--surface2);padding:7px 18px;border-top:1px solid var(--border)}
+.semana:first-child{border-top:0}
+.relleno{flex:1}
+.cat-fila{cursor:default}
+@media(hover:hover){.cat-fila:hover{background:none}}
+.cat-fila .der{display:flex;gap:6px}
+.btn-chico{border:0;background:var(--surface2);color:var(--text2);border-radius:9px;padding:6px 10px;font-size:13px;font-weight:500}
+@media(hover:hover){.btn-chico:hover{color:var(--text)}}
+.ficha h2.num{font-size:28px;letter-spacing:-0.02em}
+@media(max-width:640px){.cat-fila .der{grid-column:1/-1;grid-row:3}}

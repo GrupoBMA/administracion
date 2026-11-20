@@ -10,7 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<link rel="stylesheet" href="ventas.css?v=8">
+<link rel="stylesheet" href="ventas.css?v=9">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
@@ -229,6 +229,7 @@ body:not(.sin-sesion) .entrar{display:none}
   <section class="modulo" id="mod-registrar"></section>
   <section class="modulo" id="mod-ventas"></section>
   <section class="modulo" id="mod-personas"></section>
+  <section class="modulo" id="mod-egresos"></section>
   <section class="modulo" id="mod-dudas"></section>
   <section class="modulo" id="mod-caja"></section>
   <section class="modulo" id="mod-cobros"></section>
@@ -564,6 +565,7 @@ if (typeof module !== 'undefined') module.exports = {leerLibro:leerLibro, calcul
 <script src="ventas.js?v=6"></script>
 <script src="registrar.js?v=2"></script>
 <script src="dudas.js?v=5"></script>
+<script src="egresos.js?v=1"></script>
 <script>
 var CLAVE = 'bma.reportes.v1';
 var datos = null;        // lo leido de los Excel: {leido, sucursales:{AGS:{archivo,hojas}}}
@@ -782,7 +784,7 @@ function corregidos(){
 }
 
 // Ventas, Personas y Dudas leen de Supabase (ventas.js, personas.js, dudas.js); las demás, del Drive.
-function moduloNuevo(mod){ return {registrar: window.Registrar, ventas: window.Ventas, personas: window.Personas, dudas: window.Dudas}[mod]; }
+function moduloNuevo(mod){ return {registrar: window.Registrar, ventas: window.Ventas, personas: window.Personas, dudas: window.Dudas, egresos: window.Egresos}[mod]; }
 // Menú por módulos (a la izquierda en computadora, fila arriba en celular). Cada opción es una pantalla;
 // varias opciones pueden usar el mismo módulo (Nueva venta y Registrar pago → Registrar; Clientes, Vendedores y Empleados → Personas).
 // "Reportes del Drive" solo lo ve el admin.
@@ -797,13 +799,22 @@ var ICONOS = {
   caja: '<rect x="3.5" y="8" width="17" height="11" rx="2"/><path d="M5.5 8 7 4.5h10L18.5 8M10 12.5h4"/>',
   cobros: '<path d="M12 19V5.5M6.5 11 12 5.5 17.5 11"/>',
   gastos: '<path d="M12 5v13.5M6.5 13 12 18.5 17.5 13"/>',
-  revisar: '<path d="M12 4.5 3 19.5h18z"/><path d="M12 10.5v3.5"/><path d="M12 16.8h.01" stroke-width="2.6"/>'
+  revisar: '<path d="M12 4.5 3 19.5h18z"/><path d="M12 10.5v3.5"/><path d="M12 16.8h.01" stroke-width="2.6"/>',
+  'eg-nuevo': '<path d="M12 5v14M5 12h14"/>',
+  'eg-gastos': '<path d="M6 3.5h12v17l-3-2-3 2-3-2-3 2z"/><path d="M9 8.5h6M9 12.5h6"/>',
+  'eg-otros': '<path d="M4 8h13M13.5 4.5 17 8l-3.5 3.5M20 16H7M10.5 12.5 7 16l3.5 3.5"/>',
+  'eg-categorias': '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>'
 };
 var MENU = [
   {grupo: 'Ventas', ops: [
     {id: 'nueva', nombre: 'Nueva venta', mod: 'registrar'},
     {id: 'pago', nombre: 'Registrar pago', mod: 'registrar'},
     {id: 'ventas', nombre: 'Lista de ventas', mod: 'ventas'}]},
+  {grupo: 'Egresos', ops: [
+    {id: 'eg-nuevo', nombre: 'Registrar egreso', mod: 'egresos'},
+    {id: 'eg-gastos', nombre: 'Gastos', mod: 'egresos'},
+    {id: 'eg-otros', nombre: 'Otros egresos', mod: 'egresos'},
+    {id: 'eg-categorias', nombre: 'Categorías', mod: 'egresos'}]},
   {grupo: 'Personas', ops: [
     {id: 'clientes', nombre: 'Clientes', mod: 'personas', tipo: 'cliente'},
     {id: 'vendedores', nombre: 'Vendedores', mod: 'personas', tipo: 'vendedor'},
@@ -856,6 +867,7 @@ function ir(id, o){
     avisar('');
     if (op.mod === 'registrar') { if (o.seguir) Registrar.pintar(); else Registrar.abrir(id); }
     else if (op.mod === 'personas') Personas.deTipo(op.tipo, o.seguir);
+    else if (op.mod === 'egresos') Egresos.abrir(id, o.seguir);
     else if (!o.seguir && nuevo.inicio) nuevo.inicio();
     else nuevo.pintar();
     return;

@@ -93,8 +93,13 @@ begin
   perform pg_temp.yo();
   perform pg_temp.anota('admin elimina', not exists (select 1 from bma.egresos where id = e2), null);
 
-  -- Categorías: no repetir nombre (sin acentos), quitar sin borrar
+  -- Categorías: solo el admin las cambia; no repetir nombre (sin acentos), quitar sin borrar
   perform pg_temp.como(cap);
+  begin perform public.bma_categoria_guardar('{"nombre":"Otra prueba"}'); perform pg_temp.anota('captura no agrega categorías', false);
+  exception when others then perform pg_temp.anota('captura no agrega categorías', sqlstate = '42501', sqlerrm); end;
+  begin perform public.bma_categoria_quitar(gen); perform pg_temp.anota('captura no quita categorías', false);
+  exception when others then perform pg_temp.anota('captura no quita categorías', sqlstate = '42501', sqlerrm); end;
+  perform pg_temp.como(adm);
   begin perform public.bma_categoria_guardar('{"nombre":"nomina"}'); perform pg_temp.anota('categoría repetida', false);
   exception when others then perform pg_temp.anota('categoría repetida', sqlerrm = 'Ya existe una categoría con ese nombre', sqlerrm); end;
   perform public.bma_categoria_quitar(gen);

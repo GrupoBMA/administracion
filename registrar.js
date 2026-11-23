@@ -1,5 +1,6 @@
 // Registrar en una sola pantalla con pasos numerados (window.Registrar), como el registro de GVF.
-// Se entra desde el menú: "Nueva venta" o "Registrar pago" (Registrar.abrir). Aparecen solo los pasos que tocan; nada se guarda hasta "Guardar".
+// "Nueva venta" se entra desde el menú (Registrar.abrir); un pago, solo desde la ficha de su venta (Registrar.pagoDe),
+// para que haya un solo lugar donde registrarlo. Aparecen solo los pasos que tocan; nada se guarda hasta "Guardar".
 (function () {
   var esc = BMA.esc, $ = function (id) { return document.getElementById(id); };
   var LINEAS = [{valor: 'motos', nombre: 'Motos'}, {valor: 'pasto', nombre: 'Pasto'}, {valor: 'otro', nombre: 'Otro'}];
@@ -44,7 +45,8 @@
   }
 
   function pintar() {
-    var n = 1, h = '<div class="registro">';
+    var n = 1, h = st.que === 'pago' && st.venta ? '<div class="ficha-top"><button class="volver" id="r-volver">‹ Volver a la venta</button></div>' : '';
+    h += '<div class="registro">';
     if (st.que === 'nueva') {
       var v = st.v;
       h += paso(n++, 'Sucursal', chips('sucursal', BMA.SUCURSALES, v.sucursal));
@@ -62,12 +64,9 @@
           '<label class="lbl">Nota<span>' + campo('r-nota', st.m.nota) + '</span></label>', true);
       }
     } else if (st.que === 'pago') {
-      h += paso(n++, '¿A qué venta?', st.venta ? ventaElegida() :
-        campo('r-bventa', '', {ph: 'Folio, remisión, factura, producto o cliente'}) + '<div id="r-ventas" class="renglones vacio-oculto"></div>');
-      if (st.venta) {
-        var q = pagoHtml(n, TIPOS_PAGO); h += q.html; n = q.n;
-        if (st.m.tipo) h += paso(n++, 'Nota', campo('r-nota', st.m.nota), true);
-      }
+      h += paso(n++, 'Venta', ventaElegida());
+      var q = pagoHtml(n, TIPOS_PAGO); h += q.html; n = q.n;
+      if (st.m.tipo) h += paso(n++, 'Nota', campo('r-nota', st.m.nota), true);
     }
     if (st.que) h += '<div class="guardar"><p class="resumen" id="r-resumen"></p><p class="error" id="r-falta" hidden></p>' +
       '<div class="acciones"><button type="button" class="btn" id="r-limpiar">Empezar de nuevo</button>' +
@@ -79,10 +78,9 @@
 
   function ventaElegida() {
     var v = st.venta, e = BMA.etiquetaEstado(v);
-    return '<div class="elegida"><div><b>' + esc(v.producto) + '</b><div class="sec">' + esc(v.folio) + ' · ' +
+    return '<div class="elegida"><div><b>' + (v.remision ? 'Rem. ' + esc(v.remision) + ' · ' : '') + esc(v.producto) + '</b><div class="sec">' + esc(v.folio) + ' · ' +
       esc(v.cliente ? v.cliente.nombre : 'Sin cliente') + ' · pagado ' + BMA.dinero(v.pagado) +
-      (BMA.saldo(v) ? ' · saldo ' + BMA.dinero(BMA.saldo(v)) : '') + ' · <span class="chip-estado ' + e.clase + '">' + esc(e.texto) + '</span></div></div>' +
-      '<button type="button" class="btn" id="r-otra">Cambiar</button></div>';
+      (BMA.saldo(v) ? ' · saldo ' + BMA.dinero(BMA.saldo(v)) : '') + ' · <span class="chip-estado ' + e.clase + '">' + esc(e.texto) + '</span></div></div></div>';
   }
 
   function conectar() {
@@ -96,21 +94,15 @@
         pintar(); return;
       }
       if (ev.target.id === 'r-mas') { leer(); st.mas = !st.mas; pintar(); return; }
-      if (ev.target.id === 'r-otra') { st.venta = null; st.m = {fecha: BMA.hoy()}; pintar(); return; }
-      if (ev.target.id === 'r-limpiar') { st = limpio(st.que); pintar(); return; }
+      if (ev.target.id === 'r-volver') { volverAVenta(); return; }
+      if (ev.target.id === 'r-limpiar') { st.m = {fecha: BMA.hoy()}; if (st.que === 'nueva') st = limpio('nueva'); pintar(); return; }
       if (ev.target.id === 'r-guardar') { guardar(); return; }
-      var f = ev.target.closest('[data-venta]');
-      if (f) { elegirVenta(f.dataset.venta); }
     };
-    raiz.oninput = function (ev) {
-      if (ev.target.id === 'r-bventa') { buscarVentas(ev.target.value); return; }
-      leer(); resumen();
-    };
+    raiz.oninput = function () { leer(); resumen(); };
     if ($('r-cliente')) combos.cliente = UI.combo($('r-cliente'), {tipo: 'cliente', placeholder: 'Escribe el nombre del cliente',
       valor: st.v.cliente, alCambiar: function (p) { st.v.cliente = p; resumen(); }});
     if ($('r-vendedor')) combos.vendedor = UI.combo($('r-vendedor'), {tipo: 'vendedor', placeholder: 'Escribe el nombre del vendedor',
       valor: st.v.vendedor, alCambiar: function (p) { st.v.vendedor = p; }});
-    if ($('r-bventa')) $('r-bventa').focus();
   }
 
   function leer() {
@@ -154,31 +146,6 @@
     r.textContent = partes.join(' · ') + (m.fecha ? ', ' + BMA.fecha(m.fecha) : '');
   }
 
-  var tBusca = null;
-  function buscarVentas(q) {
-    clearTimeout(tBusca);
-    tBusca = setTimeout(function () {
-      var el = $('r-ventas'); if (!el) return;
-      if (!q.trim()) { el.innerHTML = ''; return; }
-      UI.llamar('bma_ventas_buscar', {p_q: q, p_sucursal: null, p_estado: null, p_limite: 8}).then(function (vs) {
-        if (!$('r-ventas')) return;
-        $('r-ventas').innerHTML = vs.length ? vs.map(function (v) {
-          var e = BMA.etiquetaEstado(v);
-          return '<button type="button" class="renglon" data-venta="' + esc(v.id) + '"><span class="prin">' + esc(v.producto) + '</span>' +
-            '<span class="der num">' + BMA.dinero(v.pagado) + '</span><span class="sec">' + esc(v.folio) + ' · ' +
-            esc(v.cliente ? v.cliente.nombre : 'Sin cliente') + (v.remision ? ' · rem. ' + esc(v.remision) : '') + '</span>' +
-            '<span class="sec der"><span class="chip-estado ' + e.clase + '">' + esc(e.texto) + '</span></span></button>';
-        }).join('') : '<p class="vacio">No encontré ventas con eso.</p>';
-      }).catch(function () {});
-    }, 250);
-  }
-
-  function elegirVenta(id) {
-    UI.llamar('bma_venta', {p_id: id}).then(function (r) {
-      st.venta = r.venta; st.m = {fecha: BMA.hoy()}; pintar();
-    }).catch(function () {});
-  }
-
   function guardar() {
     leer();
     var f = falta(), aviso = $('r-falta');
@@ -196,16 +163,22 @@
     llamada.then(function (ventaId) {
       if (!ventaId) { $('r-guardar').disabled = false; return; }
       UI.aviso('Guardado');
-      st = limpio(st.que);
+      st = limpio(st.que === 'pago' ? 'nueva' : st.que);
       selModulo('ventas'); Ventas.abrir(ventaId);
     }).catch(function () { if ($('r-guardar')) $('r-guardar').disabled = false; });
   }
 
-  // Abrir Registrar ya con una venta escogida (desde la ficha: "Agregar movimiento")
-  function pagoDe(venta) { st = limpio('pago'); st.venta = venta; selModulo('registrar'); }
+  // El único camino para registrar un pago: el botón "Registrar pago" de la ficha de la venta
+  function pagoDe(venta) { st = limpio('pago'); st.venta = venta; ir('pago'); }
+  function volverAVenta() { var id = st.venta && st.venta.id; st = limpio('nueva'); selModulo('ventas'); if (id) Ventas.abrir(id); }
 
-  // Desde el menú: si ya estaba en esa misma opción, se conserva lo capturado
-  function abrir(que) { if (st.que !== que) st = limpio(que); pintar(); }
+  // Desde el menú (o el "atrás" del navegador): si ya estaba en esa misma opción, se conserva lo capturado.
+  // Un pago sin su venta (p. ej. al regresar con "atrás" después de guardarlo) no tiene a qué aplicarse: vuelve a la lista.
+  function abrir(que) {
+    if (que === 'pago' && !(st.que === 'pago' && st.venta)) { ir('ventas', {reemplazar: true}); return; }
+    if (st.que !== que) st = limpio(que);
+    pintar();
+  }
   function que() { return st.que; }
 
   window.Registrar = {pintar: pintar, pagoDe: pagoDe, abrir: abrir, que: que};

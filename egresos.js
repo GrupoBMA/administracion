@@ -1,7 +1,8 @@
 // Egresos (window.Egresos): todo el dinero que sale, separado por lo que es.
 //   Gasto: se fue de la empresa (lleva categoría y a quién se le carga). Traspaso: solo cambió de cuenta.
 //   Préstamo: alguien lo debe regresar. Devolución: solo lo importado (en la captura va por Ventas).
-// Pantallas del menú: Registrar egreso · Gastos · Otros egresos · Categorías. "Sale de" es la caja o cuenta de donde
+// Pantallas del menú: Registrar egreso · Gastos · Otros egresos, y Configuración → Categorías de gasto (solo admin; las
+// categorías se agregan y cambian solo ahí, en la captura únicamente se escogen). "Sale de" es la caja o cuenta de donde
 // salió el dinero; "Se carga a" es la sucursal (o Dirección) a la que le toca el gasto.
 (function () {
   var esc = BMA.esc, $ = function (id) { return document.getElementById(id); };
@@ -31,7 +32,7 @@
 
   // ---------------------------------------------------------------- Entrar desde el menú
   function abrir(id, seguir) {
-    var v = {'eg-nuevo': 'registrar', 'eg-gastos': 'gastos', 'eg-otros': 'otros', 'eg-categorias': 'categorias'}[id] || 'gastos';
+    var v = {'eg-nuevo': 'registrar', 'eg-gastos': 'gastos', 'eg-otros': 'otros', 'cf-categorias': 'categorias'}[id] || 'gastos';
     if (!seguir || v !== vista) ficha = null;
     if (v === 'registrar' && (!seguir || !st)) st = limpio();
     vista = v;
@@ -41,7 +42,7 @@
     if (!cat) { catalogos().then(pintar).catch(function () {}); return; }
     if (ficha) return pintarFicha(ficha);
     if (vista === 'registrar') return pintarRegistro();
-    if (vista === 'categorias') return pintarCategorias();
+    if (vista === 'categorias') return esAdmin() ? pintarCategorias() : pintarLista();
     pintarLista();
   }
 
@@ -78,8 +79,7 @@
     else h += paso(n++, '¿Qué salió?', chips('tipo', TIPOS, st.tipo));
     if (st.tipo === 'gasto') {
       var c = categoria(st.categoria_id);
-      h += paso(n++, 'Categoría', chips('categoria_id', catsActivas().map(function (x) { return {valor: x.id, nombre: x.nombre}; }), st.categoria_id) +
-        '<button type="button" class="mas" id="e-cat-nueva">+ Nueva categoría</button>');
+      h += paso(n++, 'Categoría', chips('categoria_id', catsActivas().map(function (x) { return {valor: x.id, nombre: x.nombre}; }), st.categoria_id));
       if (c && (c.pide === 'empleado' || c.pide === 'vendedor')) h += paso(n++, c.pide === 'empleado' ? '¿A quién se le pagó?' : '¿Qué vendedor?', '<div id="e-persona"></div>');
       if (c && c.pide === 'venta') h += paso(n++, '¿De qué venta?', st.venta
         ? '<div class="elegida"><div><b>' + esc(st.venta.producto) + '</b><div class="sec">' + esc(st.venta.folio) + (st.venta.remision ? ' · rem. ' + esc(st.venta.remision) : '') +
@@ -144,7 +144,6 @@
         if (!vid) return;
         UI.llamar('bma_venta', {p_id: vid}).then(function (r) { st.venta = r.venta; pintarRegistro(); });
       }); }
-      else if (id === 'e-cat-nueva') { leer(); nuevaCategoria().then(function (cid) { if (cid) { st.categoria_id = cid; pintarRegistro(); } }); }
     };
     raiz.oninput = function () { leer(); resumen(); };
     var cp = $('e-persona');

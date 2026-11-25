@@ -192,6 +192,7 @@
     ajuste: 'Ajustes de inventario',
     sin_venta: 'Salió a un cliente sin orden de venta',
     cambio: 'Se cambió después de registrarse',
+    serie_mal: 'Serie mal capturada',
     sin_movimientos: 'Sin movimientos en Odoo'
   };
 

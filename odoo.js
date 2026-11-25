@@ -154,7 +154,7 @@
   function icoC(k, tono, extra) { return '<span class="od-icc tono-' + (tono || 'neutro') + (extra ? ' ' + extra : '') + '">' + ico(k) + '</span>'; }
   var ICO_CLASE = {vehiculos: 'moto', pasto: 'pasto', otros: 'caja'};
   var ICO_ALERTA = {negativo: 'negativo', serie: 'copia', otra_persona: 'persona', devolucion: 'regreso', ajuste: 'ajuste',
-                    sin_venta: 'venta', cambio: 'editar', sin_movimientos: 'reloj'};
+                    sin_venta: 'venta', cambio: 'editar', serie_mal: 'editar', sin_movimientos: 'reloj'};
 
   // Lo de Odoo se pinta en #od-base; la ficha de la serie va aparte, dentro del mismo módulo (se esconde con él)
   function cont() {
@@ -677,7 +677,7 @@
       (st.vista === 'pendiente' ? '<button type="button" class="btn-chico" data-accion="revisado" data-i="' + i + '">' + ico('check') + 'Ya lo revisé</button>' : '');
     // Si el título repite el nombre del grupo, arriba va la sucursal (no se repite lo que ya dice el grupo)
     var repite = a.titulo === L.ALERTAS[a.tipo], alm = a.almacen ? nomAlm(a.almacen) : '';
-    var resto = [repite ? '' : alm, a.detalle ? corto(a.detalle) : ''].filter(Boolean).map(esc);
+    var resto = [repite ? '' : alm, a.detalle ? (a.tipo === 'serie_mal' ? conNombres(corto(a.detalle)) : corto(a.detalle)) : ''].filter(Boolean).map(esc);
     if (s) resto.push('<span class="num">' + esc(s) + '</span>');
     return '<div class="mov od-alerta-fila"><span class="t">' + esc(repite ? alm || a.titulo : a.titulo) + '</span><span class="d">' + esc(L.fechaHora(a.fecha)) + '</span>' +
       '<span class="d">' + resto.join(' · ') +

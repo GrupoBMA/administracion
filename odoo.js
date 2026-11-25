@@ -264,7 +264,7 @@
       el.innerHTML = '<div class="renglones">' + rs.slice(0, 30).map(function (r, i) {
         var s = L.serie(r.lote), ahora = dondeEsta(r);
         return '<button type="button" class="renglon od-fila" data-i="' + i + '">' + imagen(L.figura('', r.producto || ''), 'od-sil-fila') +
-          '<span class="od-fila-txt"><b class="num">' + resaltar(L.serieCorta(s.serie), st.q) + '</b><small>' + esc(nombreProducto(r)) + '</small></span>' +
+          '<span class="od-fila-txt"><b class="num">' + resaltar(r.folio || L.serieCorta(s.serie), st.q) + '</b><small>' + esc(nombreProducto(r)) + '</small></span>' +
           '<span class="od-fila-der' + (ahora.tono === 'alerta' ? ' od-alerta' : '') + '">' + esc(ahora.corto) + '</span>' + ico('flecha') + '</button>';
       }).join('') + '</div>' + (rs.length > 30 ? '<p class="mas-res">Y ' + (rs.length - 30) + ' más. Escribe más números de la serie.</p>' : '');
       el.onclick = function (e) {
@@ -348,7 +348,7 @@
     var nombre = panelProd ? panelProd.titulo + (panelProd.color ? ' · ' + panelProd.color : '') : (r ? nombreProducto(r) : '');
     var crudo = r ? r.producto || (r.movimientos && r.movimientos.length ? r.movimientos[0].producto : '') || '' : '';
     return '<div class="od-s-cab">' + imagen(L.figura(panelProd ? panelProd.familia : '', crudo || nombre), 'od-sil-ficha') +
-      '<h2 id="od-p-tit" class="num">' + esc(L.serieCorta(s.serie)) + '</h2>' +
+      '<h2 id="od-p-tit" class="num">' + esc((r && r.folio) || L.serieCorta(s.serie)) + '</h2>' +
       (nombre ? '<p class="od-s-prod">' + esc(nombre) + '</p>' : '') + '</div>' + (r ? info(lote, r) : '');
   }
   // Información (como "Obtener información" de un archivo): serie completa, pedimento, modelo, nombre en Odoo y llegada.
@@ -357,7 +357,7 @@
     var s = L.serie(lote), n = r.producto || (r.movimientos && r.movimientos.length ? r.movimientos[0].producto : '') || '';
     var codigo = (n.match(/^\[([^\]]+)\]/) || [])[1] || (panelProd && panelProd.codigo) || '';
     var llego = (r.movimientos || []).filter(function (m) { return m.de_uso === 'supplier'; })[0];
-    var filas = [['Número de serie', s.serie, true], ['Pedimento', s.pedimento, true], ['Modelo', codigo, true],
+    var filas = [['Folio', r.folio, true], ['Número de serie', s.serie, true], ['Pedimento', s.pedimento, true], ['Modelo', codigo, true],
       ['En Odoo', L.capital(n.replace(/^\[[^\]]*\]\s*/, ''))], ['Llegó', llego ? L.fechaHora(llego.fecha).split(', ')[0] + ' a ' + lugarDe(llego, 'a') : '']];
     return '<div class="od-info" id="od-info"><div><dl>' + filas.filter(function (f) { return f[1]; }).map(function (f) {
       return '<div><dt>' + esc(f[0]) + '</dt><dd' + (f[2] ? ' class="num"' : '') + '>' + esc(f[1]) + '</dd></div>';
@@ -568,7 +568,8 @@
         (ab && conSerie ? '<div class="od-chips">' + x.filas.slice().sort(function (p, q) { return Date.parse(llegada(p)) - Date.parse(llegada(q)); }).map(function (e) {
           var raro = Number(e.cantidad) !== 1, d = L.dias(llegada(e), ref);
           return '<button type="button" class="od-chip num sem-' + L.semaforo(d) + (raro ? ' raro' : '') + '" data-serie="' + esc(e.lote) + '" title="' +
-            d + (d === 1 ? ' día' : ' días') + ' aquí' + (raro ? ' · cantidad ' + num(e.cantidad) : '') + '">' + esc(L.serieCorta(L.serie(e.lote).serie)) + '</button>';
+            (e.folio ? e.folio + ' · ' : '') + d + (d === 1 ? ' día' : ' días') + ' aquí' + (raro ? ' · cantidad ' + num(e.cantidad) : '') + '">' +
+            esc(e.folio ? L.folioCorto(e.folio) : L.serieCorta(L.serie(e.lote).serie)) + '</button>';
         }).join('') + '</div>' : '');
     }).join('') + '</div>';
   }
@@ -619,7 +620,7 @@
   function filaMov(m, alm, i) {
     var t = L.tipoMov(m, alm), p = L.producto(m), s = L.serie(m.lote);
     var ruta = alm && t.clave === 'traspaso' ? '' : lugarDe(m, 'de') + ' → ' + lugarDe(m, 'a');
-    var sec = [m.lote ? L.serieCorta(s.serie) : (m.unidad ? L.cantidad(m.cantidad, m.unidad) : ''), ruta].filter(Boolean).map(esc).join(' · ');
+    var sec = [m.lote ? m.folio || L.serieCorta(s.serie) : (m.unidad ? L.cantidad(m.cantidad, m.unidad) : ''), ruta].filter(Boolean).map(esc).join(' · ');
     var hora = L.fechaHora(m.fecha).split(', ');
     var etiqueta = m.lote ? 'button type="button" data-i="' + i + '"' : 'div';
     return '<' + etiqueta + ' class="renglon od-mov' + (m.lote ? '' : ' od-fija') + '">' + icoC(t.clave, t.tono) +
@@ -671,7 +672,7 @@
       .replace(/\[([^\]]+)\][^·]*/g, '$1 ');
   }
   function filaAlerta(a, i) {
-    var s = a.lote ? L.serieCorta(L.serie(a.lote).serie) : '';
+    var s = a.lote ? a.folio || L.serieCorta(L.serie(a.lote).serie) : '';
     var acciones = (s ? '<button type="button" class="btn-chico" data-accion="serie" data-i="' + i + '">' + ico('moto') + 'Ver su recorrido</button>' : '') +
       (st.vista === 'pendiente' ? '<button type="button" class="btn-chico" data-accion="revisado" data-i="' + i + '">' + ico('check') + 'Ya lo revisé</button>' : '');
     // Si el título repite el nombre del grupo, arriba va la sucursal (no se repite lo que ya dice el grupo)

@@ -88,6 +88,12 @@
     s = String(s || '');
     return /^[A-Z0-9]{11,}$/i.test(s) ? s.slice(-5) : s;
   }
+  // Folio (lo arma bma.odoo_folios: "ATV200-RO/00010", "ATV200-RO/T00001"); donde ya se ve el modelo basta lo de después de la clave
+  function folioCorto(f) {
+    f = String(f || '');
+    var m = f.match(/\/([A-Z]?[A-Z0-9]{5})$/i);
+    return m ? m[1] : f;
+  }
 
   // Ancho del pasto (2 o 4 m): de la clave "P-OA-2M-18MM" o del nombre "(2 m)"
   function anchoPasto(p) {
@@ -189,7 +195,7 @@
     sin_movimientos: 'Sin movimientos en Odoo'
   };
 
-  return {nombreAlmacen: nombreAlmacen, producto: producto, anchoPasto: anchoPasto, rollos: rollos, serie: serie, serieCorta: serieCorta, modelo: modelo, nombreCorto: nombreCorto, figura: figura, muestraColor: muestraColor, dias: dias, semaforo: semaforo,
+  return {nombreAlmacen: nombreAlmacen, producto: producto, anchoPasto: anchoPasto, rollos: rollos, serie: serie, serieCorta: serieCorta, folioCorto: folioCorto, modelo: modelo, nombreCorto: nombreCorto, figura: figura, muestraColor: muestraColor, dias: dias, semaforo: semaforo,
           tipoMov: tipoMov, fechaHora: fechaHora, hace: hace, lunes: lunes, semana: semana, cantidad: cantidad, clase: clase,
           ALERTAS: ALERTAS, capital: capital};
 });

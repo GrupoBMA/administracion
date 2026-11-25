@@ -134,3 +134,11 @@ test('nombre corto para Otros', () => {
 test('figura: con familia manda la familia', () => {
   assert.strictEqual(L.figura('Accesorios', 'TOLDO PARA MOTOCARRO 150 CC (BLANCO)'), 'caja');
 });
+
+test('folio corto: lo de después de la clave', () => {
+  assert.strictEqual(L.folioCorto('ATV200-RO/00010'), '00010');
+  assert.strictEqual(L.folioCorto('ATV200-RO/T00001'), 'T00001');
+  assert.strictEqual(L.folioCorto('CH-200/SIN/T06760'), 'T06760');
+  assert.strictEqual(L.folioCorto('atv110-057'), 'atv110-057');
+  assert.strictEqual(L.folioCorto(''), '');
+});

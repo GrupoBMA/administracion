@@ -32,34 +32,78 @@
     persona: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.3-3.3 3.8-5 7-5s5.7 1.7 7 5"/>',
     check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
     flecha: '<path d="m9 6 6 6-6 6"/>',
-    atv: '<circle cx="6" cy="16.5" r="3.2"/><circle cx="18" cy="16.5" r="3.2"/><path d="M2.5 13.5c1.2-2.6 5.8-2.6 7 0h5c1.2-2.6 5.8-2.6 7 0"/><path d="M8.5 10.5h6l1.2 3"/><path d="M16.2 10.5 17.8 7h2.2"/>',
-    cross: '<circle cx="5.5" cy="16.5" r="3.5"/><circle cx="18.5" cy="16.5" r="3.5"/><path d="M5.5 16.5 9.5 11h6l3 5.5"/><path d="M8 8.8h5.5"/><path d="M15.5 11 17 6.5h2.5"/>',
-    utv: '<circle cx="6" cy="17" r="2.8"/><circle cx="18" cy="17" r="2.8"/><path d="M2.5 14h19"/><path d="M6.5 14V7h8.5l3.5 7"/><path d="M10.8 7v7"/>',
-    gokart: '<circle cx="5.5" cy="17" r="2.5"/><circle cx="18.5" cy="17" r="2.5"/><path d="M2.5 14h19"/><path d="M7.5 14v-3.5h4l1 3.5"/><path d="M15.5 14 17 9.5"/><path d="M15.5 9.5h3"/>',
-    motocarro: '<circle cx="6" cy="17.5" r="2.3"/><circle cx="18" cy="17.5" r="2.3"/><path d="M3.7 17.5V9.5h4.8l2.5 4v4"/><path d="M11 10.5h9.5v7"/><path d="M8.3 17.5h7.4"/>',
-    mototaxi: '<circle cx="6" cy="17.5" r="2.3"/><circle cx="18" cy="17.5" r="2.3"/><path d="M3.7 15V8.5A2.5 2.5 0 0 1 6.2 6h10.3l4 7v4.5"/><path d="M3.7 15h16.8"/><path d="M8.3 17.5h7.4"/><path d="M10.5 6v9"/>',
-    patin: '<circle cx="5.5" cy="17.5" r="2"/><circle cx="18.5" cy="17.5" r="2"/><path d="M7.5 17.5h9"/><path d="M18.5 17.5 15.5 5h-3"/>',
-    bici: '<circle cx="5.5" cy="16" r="3.5"/><circle cx="18.5" cy="16" r="3.5"/><path d="M5.5 16 9 9.5h7l2.5 6.5"/><path d="M9 9.5l3.5 6.5H16"/><path d="M7.8 7.5h2.6M14.8 7h2.5"/>',
-    silla: '<circle cx="10" cy="16" r="4"/><circle cx="18" cy="18.8" r="1.4"/><path d="M7 4.5V12h7.5l3 6.5"/><path d="M7 8h6"/>',
-    montacargas: '<circle cx="6.5" cy="17.5" r="2.3"/><circle cx="14.5" cy="17.5" r="2.3"/><path d="M4.2 15V9.5h4l3 5.5h6"/><path d="M8.2 9.5V5.5h3.5"/><path d="M19 4v13.5h2.5"/>',
-    chasis: '<path d="M3.5 8h17M3.5 16h17M7 8v8M12 8v8M17 8v8"/>',
-    padel: '<ellipse cx="10" cy="9.5" rx="5.5" ry="6"/><path d="m13.6 14 5.4 5.5"/><path d="M8 8h.01M11 8h.01M9.5 11h.01" stroke-width="2.4"/>',
     info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><path d="M12 7.8h.01" stroke-width="2.6"/>',
     actualizar: '<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/>'
   };
   function ico(k) { return '<svg class="od-ic" viewBox="0 0 24 24" aria-hidden="true">' + (IC[k] || IC.lugar) + '</svg>'; }
+  // Siluetas de lado (viewBox 0 0 64 40), todas mirando a la derecha, como íconos rellenos: se reconocen sin detalle.
+  // Relleno = color del texto; ".h" = hueco del color del fondo (--hueco).
+  var RUEDA = function (x, y, r) {
+    return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '"/><circle class="h" cx="' + x + '" cy="' + y + '" r="' + (r * 0.5) + '"/>' +
+      '<circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.22) + '"/>';
+  };
+  var SIL = {
+    motocarro:
+      '<rect x="3" y="10" width="31" height="17" rx="1.5"/><rect x="3" y="27" width="42" height="3"/>' +
+      '<path d="M33 25h13l3-5h5l2 6v4H33z"/><path d="M50 20l2-8 3-1" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<path d="M54 22l3 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M38 23c2-3 6-4 9-3" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      RUEDA(14, 32, 6) + RUEDA(56, 32, 6),
+    mototaxi:
+      '<rect x="5" y="4" width="44" height="4" rx="2"/>' +
+      '<rect x="7" y="7" width="3" height="12"/><rect x="36" y="7" width="3" height="13"/>' +
+      '<path d="M5 30V19h34v11z"/><path d="M38 30V13l7-6h3l9 14v9z"/><path class="h" d="M43 11h4l6 9h-10z"/>' +
+      RUEDA(15, 32, 5.5) + RUEDA(52, 32, 5.5),
+    atv:
+      '<path d="M6 25c0-5 4-8 9-8h8l3-3h12l3 3h8c5 0 9 3 9 8v2H6z"/><rect x="21" y="12" width="13" height="3" rx="1.5"/>' +
+      '<path d="M44 16l2-7h4" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+      RUEDA(16, 30, 7.5) + RUEDA(48, 30, 7.5),
+    cross:
+      '<path d="M18 21l7-5h13l6-4 3 2-4 7-9 4H24z"/><rect x="22" y="12" width="14" height="3.5" rx="1.75"/>' +
+      '<path d="M45 10l7 21M42 9l6-1" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      '<path d="M12 31l14-5" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>' +
+      RUEDA(12, 31, 7) + RUEDA(52, 31, 7),
+    utv:
+      '<path d="M3 27l4-5h47l7 3v3H3z"/>' +
+      '<path d="M13 22l6-14h20l11 14M28 8v14M50 22l4-6" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<path d="M20 22v-6c0-1 .8-2 2-2h3v8z"/><rect x="2" y="19" width="9" height="3" rx="1"/>' +
+      RUEDA(15, 30, 8) + RUEDA(50, 30, 8),
+    gokart:
+      '<path d="M5 29h47l7-4v4l-2 2H5z"/>' +
+      '<path d="M16 28c0-7 2-12 7-12h4l2 12z"/>' +
+      '<path d="M35 27l6-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><ellipse cx="42" cy="15" rx="2" ry="4.5" transform="rotate(30 42 15)"/>' +
+      '<rect x="6" y="20" width="8" height="7" rx="1.5"/>' +
+      RUEDA(12, 32, 6) + RUEDA(51, 32, 6),
+    patin:
+      '<path d="M13 28c1-8 7-12 15-12h6l6 12z"/><rect x="18" y="12" width="14" height="4" rx="2"/>' +
+      '<path d="M48 32L44 9M40 8c3-1 6-1 9 1" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      RUEDA(13, 31, 7) + RUEDA(49, 31, 7),
+    bici:
+      '<g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<circle cx="14" cy="28" r="8"/><circle cx="50" cy="28" r="8"/><path d="M14 28l9-14h18l9 14M23 14l9 14h9M41 14l-2-5h-4M20 9h7"/></g>' +
+      '<circle cx="32" cy="28" r="3"/>',
+    silla:
+      '<path d="M16 4h4v15h17l6 13" stroke="currentColor" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<rect x="16" y="17" width="20" height="4" rx="2"/>' +
+      '<circle cx="26" cy="28" r="9.5"/><circle class="h" cx="26" cy="28" r="6.5"/><circle cx="26" cy="28" r="2"/><circle cx="46" cy="34" r="3"/>',
+    montacargas:
+      '<path d="M4 30V18h8l5-11h12v23z"/><path class="h" d="M18 10h8v8h-12z"/>' +
+      '<rect x="31" y="4" width="4" height="27"/><rect x="35" y="28" width="22" height="3" rx="1"/><rect x="35" y="16" width="4" height="15"/>' +
+      RUEDA(11, 32, 5.5) + RUEDA(27, 32, 5.5),
+    chasis:
+      '<rect x="4" y="16" width="56" height="4" rx="1"/><rect x="4" y="25" width="56" height="4" rx="1"/>' +
+      '<rect x="8" y="16" width="4" height="13"/><rect x="22" y="16" width="4" height="13"/><rect x="38" y="16" width="4" height="13"/><rect x="52" y="16" width="4" height="13"/>',
+    padel:
+      '<ellipse cx="24" cy="16" rx="12" ry="13"/><circle class="h" cx="20" cy="12" r="1.6"/><circle class="h" cx="27" cy="12" r="1.6"/>' +
+      '<circle class="h" cx="20" cy="19" r="1.6"/><circle class="h" cx="27" cy="19" r="1.6"/>' +
+      '<path d="M32 26l9 9" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="30" r="5"/>',
+    caja:
+      '<path d="M12 12l20-7 20 7v19l-20 7-20-7z"/><path class="h" d="M32 19v17" stroke-width="0"/><path d="M12 12l20 7 20-7" stroke="var(--hueco)" stroke-width="2" fill="none"/><path d="M32 19v18" stroke="var(--hueco)" stroke-width="2"/>'
+  };
+  // Silueta en su casilla de color (clase: od-sil-tile, od-sil-cab, od-sil-ficha, od-sil-fila)
+  function imagen(fig, clase) {
+    return '<span class="od-sil-c ' + clase + '"><svg class="od-sil" viewBox="0 0 64 40" aria-hidden="true">' + (SIL[fig] || SIL.caja) + '</svg></span>';
+  }
   // Ícono en su casilla de color (tono: entra, venta, neutro o alerta)
-  // Fotos de las portadas de sunldemexico.com (img/odoo). Las familias sin foto se quedan con su dibujo.
-  var FOTOS = {atv: 1, cross: 1, gokart: 1, motocarro: 1, mototaxi: 1, patin: 1, utv: 1};
-  function foto(fig, pista) {
-    if (fig === 'cross' && /^50\b|\b50\s*cc\b/i.test(pista || '')) return 'img/odoo/minimoto.jpg';
-    return FOTOS[fig] ? 'img/odoo/' + fig + '.jpg' : '';
-  }
-  // Foto (si hay) o dibujo en su casilla de color
-  function imagen(fig, pista, clase, claseIco) {
-    var f = foto(fig, pista);
-    return f ? '<span class="od-foto ' + clase + '"><img src="' + f + '" alt="" decoding="async"></span>' : icoC(fig, 'venta', claseIco);
-  }
   function icoC(k, tono, extra) { return '<span class="od-icc tono-' + (tono || 'neutro') + (extra ? ' ' + extra : '') + '">' + ico(k) + '</span>'; }
   var ICO_CLASE = {vehiculos: 'moto', pasto: 'pasto', otros: 'caja'};
   var ICO_ALERTA = {negativo: 'negativo', serie: 'copia', otra_persona: 'persona', devolucion: 'regreso', ajuste: 'ajuste',
@@ -172,7 +216,7 @@
       if (!rs.length) { el.innerHTML = '<div class="od-nada">' + icoC('buscar', 'neutro') + '<b>No hay ninguna serie con “' + esc(st.q) + '”</b></div>'; return; }
       el.innerHTML = '<div class="renglones">' + rs.slice(0, 30).map(function (r, i) {
         var s = L.serie(r.lote), ahora = dondeEsta(r);
-        return '<button type="button" class="renglon od-fila" data-i="' + i + '">' + icoC(L.figura('', r.producto || ''), ahora.tono) +
+        return '<button type="button" class="renglon od-fila" data-i="' + i + '">' + imagen(L.figura('', r.producto || ''), 'od-sil-fila') +
           '<span class="od-fila-txt"><b class="num">' + resaltar(L.serieCorta(s.serie), st.q) + '</b><small>' + esc(nombreProducto(r)) + '</small></span>' +
           '<span class="od-fila-der' + (ahora.tono === 'alerta' ? ' od-alerta' : '') + '">' + esc(ahora.corto) + '</span>' + ico('flecha') + '</button>';
       }).join('') + '</div>' + (rs.length > 30 ? '<p class="mas-res">Y ' + (rs.length - 30) + ' más. Escribe más números de la serie.</p>' : '');
@@ -256,7 +300,7 @@
     var s = L.serie(lote);
     var nombre = panelProd ? panelProd.titulo + (panelProd.color ? ' · ' + panelProd.color : '') : (r ? nombreProducto(r) : '');
     var crudo = r ? r.producto || (r.movimientos && r.movimientos.length ? r.movimientos[0].producto : '') || '' : '';
-    return '<div class="od-s-cab">' + imagen(L.figura(panelProd ? panelProd.familia : '', crudo || nombre), panelProd ? panelProd.variante : crudo, 'od-foto-ficha', 'od-icc-xl') +
+    return '<div class="od-s-cab">' + imagen(L.figura(panelProd ? panelProd.familia : '', crudo || nombre), 'od-sil-ficha') +
       '<h2 id="od-p-tit" class="num">' + esc(L.serieCorta(s.serie)) + '</h2>' +
       (nombre ? '<p class="od-s-prod">' + esc(nombre) + '</p>' : '') + '</div>' + (r ? info(lote, r) : '');
   }
@@ -418,7 +462,7 @@
     var g = agrupar(es);
     return '<div class="od-fams">' + g.orden.map(function (f) {
       var F = g.fams[f];
-      return '<button type="button" class="od-ftile" data-fam="' + esc(f) + '"><span class="od-ftile-img">' + imagen(F.fig, '', 'od-foto-tile', 'od-icc-lg') + '</span>' +
+      return '<button type="button" class="od-ftile" data-fam="' + esc(f) + '"><span class="od-ftile-img">' + imagen(F.fig, 'od-sil-tile') + '</span>' +
         '<span class="od-ftile-n num' + (F.n < 0 ? ' od-alerta' : '') + '">' + num(F.n) + '</span><span class="od-ftile-nom">' + esc(f) + '</span></button>';
     }).join('') + '</div>';
   }
@@ -430,7 +474,7 @@
     if (!F) { st.fam = null; return almacen(); }
     var v = F.vars[st.vari[F.nombre]] ? st.vari[F.nombre] : F.ordenV[0];
     var h = '<div class="ficha-top"><button type="button" class="volver" id="od-volver">‹ ' + esc(L.nombreAlmacen(a.nombre)) + '</button></div>' +
-      '<div class="od-fcab">' + imagen(F.fig, v, 'od-foto-cab', 'od-icc-xl') + '<h2>' + esc(F.nombre) + '</h2><span class="num">' + num(F.n) + '</span></div>';
+      '<div class="od-fcab">' + imagen(F.fig, 'od-sil-cab') + '<h2>' + esc(F.nombre) + '</h2><span class="num">' + num(F.n) + '</span></div>';
     if (F.ordenV.length > 1) h += '<div class="od-vars" id="od-vars">' + F.ordenV.map(function (k) {
       var on = k === v;
       return '<button type="button" class="od-vtile' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-var="' + esc(k) + '"><b>' + esc(k || 'Otros') + '</b>' +

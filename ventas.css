@@ -288,18 +288,19 @@ mark{background:var(--acento-bg);color:var(--acento);border-radius:4px;padding:0
 .od-ftile-n{font-size:28px;font-weight:700;line-height:1.1;letter-spacing:-.01em}
 .od-ftile-nom{font-size:15px;font-weight:500;color:var(--text2)}
 
-/* Fotos de portada (sunldemexico.com), en la proporción de la original */
-.od-foto{display:block;flex:none;overflow:hidden;background:#C8C8C8;aspect-ratio:488/308}
-.od-foto img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 45%}
+/* Siluetas de lado de cada familia, rellenas del azul de la app sobre su tinte */
+.od-sil-c{--hueco:color-mix(in srgb,var(--acento) 11%,var(--surface));display:grid;place-items:center;flex:none;background:var(--hueco);color:var(--acento);aspect-ratio:64/40}
+.od-sil{width:80%;height:auto;fill:currentColor}
+.od-sil .h{fill:var(--hueco)}
 .od-ftile{padding:10px 10px 14px}
 .od-ftile-img{display:block;width:100%;margin-bottom:auto}
-.od-foto-tile{width:100%;border-radius:12px}
-.od-ftile-img .od-icc{width:100%;height:auto;aspect-ratio:488/308;border-radius:12px}
-.od-ftile-img .od-icc .od-ic{width:40px;height:40px;stroke-width:1.6}
+.od-sil-tile{width:100%;border-radius:12px}
 .od-ftile-n,.od-ftile-nom{padding:0 6px}
 .od-ftile-n{margin-top:12px}
-.od-foto-cab{width:120px;border-radius:14px}
-.od-foto-ficha{width:min(300px,86%);border-radius:18px;margin-bottom:8px}
+.od-sil-cab{width:84px;border-radius:14px}
+.od-sil-ficha{width:min(220px,70%);border-radius:18px;margin-bottom:8px}
+.od-sil-fila{width:52px;border-radius:11px}
+.od-sil-fila .od-sil{width:86%}
 
 /* Familia: cabecera, cilindradas y colores */
 .od-fcab{display:flex;align-items:center;gap:14px;margin:2px 0 18px}
@@ -336,7 +337,7 @@ mark{background:var(--acento-bg);color:var(--acento);border-radius:4px;padding:0
 #od-lista>.renglones:not(.od-colores){max-width:760px}
 @media(max-width:640px){
   .od-fams{grid-template-columns:1fr 1fr;gap:10px}
-  .od-foto-cab{width:96px}
+  .od-sil-cab{width:72px}
   .od-chips{padding-left:18px}
 }
 

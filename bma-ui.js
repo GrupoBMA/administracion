@@ -285,7 +285,7 @@
     return '<div class="seg" id="' + id + '" role="group">' + opciones.map(function (o) {
       var on = o.valor === valor;
       return '<button type="button" class="seg-op' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-valor="' + esc(o.valor) + '">' +
-        esc(o.nombre) + (o.cuenta ? ' <span class="seg-n">' + esc(o.cuenta) + '</span>' : '') + '</button>';
+        (o.ico || '') + esc(o.nombre) + (o.cuenta ? ' <span class="seg-n">' + esc(o.cuenta) + '</span>' : '') + '</button>';
     }).join('') + '</div>';
   }
 

@@ -53,22 +53,23 @@
   }
 
   // Qué fue un movimiento visto desde un almacén (o en general si no se da almacén)
+  // clave: qué ícono lleva; tono: entra (verde), venta (azul), neutro (gris) o alerta (rojo)
   function tipoMov(m, alm) {
     var de = m.de_uso, a = m.a_uso;
-    if (de === 'inventory') return {texto: 'Ajuste: se agregó', signo: 1, alerta: true};
-    if (a === 'inventory') return {texto: 'Ajuste: se quitó', signo: -1, alerta: true};
-    if (a === 'customer') return {texto: 'Venta', signo: -1};
-    if (de === 'customer') return {texto: 'Regresó de cliente', signo: 1, alerta: true};
-    if (de === 'supplier') return {texto: 'Llegó de proveedor', signo: 1};
-    if (a === 'supplier') return {texto: 'Se regresó al proveedor', signo: -1};
-    if (a === 'transit') return {texto: 'Salió en tránsito', signo: -1};
-    if (de === 'transit') return {texto: 'Llegó de tránsito', signo: 1};
+    if (de === 'inventory') return {texto: 'Ajuste: se agregó', signo: 1, alerta: true, clave: 'ajuste', tono: 'alerta'};
+    if (a === 'inventory') return {texto: 'Ajuste: se quitó', signo: -1, alerta: true, clave: 'ajuste', tono: 'alerta'};
+    if (a === 'customer') return {texto: 'Venta', signo: -1, clave: 'venta', tono: 'venta'};
+    if (de === 'customer') return {texto: 'Regresó de cliente', signo: 1, alerta: true, clave: 'regreso', tono: 'alerta'};
+    if (de === 'supplier') return {texto: 'Llegó de proveedor', signo: 1, clave: 'llego', tono: 'entra'};
+    if (a === 'supplier') return {texto: 'Se regresó al proveedor', signo: -1, clave: 'regreso', tono: 'neutro'};
+    if (a === 'transit') return {texto: 'Salió en tránsito', signo: -1, clave: 'transito', tono: 'neutro'};
+    if (de === 'transit') return {texto: 'Llegó de tránsito', signo: 1, clave: 'transito', tono: 'entra'};
     if (m.de_almacen && m.a_almacen && m.de_almacen !== m.a_almacen) {
-      if (alm && m.a_almacen === alm) return {texto: 'Traspaso de ' + m.de_almacen, signo: 1};
-      if (alm && m.de_almacen === alm) return {texto: 'Traspaso a ' + m.a_almacen, signo: -1};
-      return {texto: 'Traspaso ' + m.de_almacen + ' → ' + m.a_almacen, signo: 0};
+      if (alm && m.a_almacen === alm) return {texto: 'Traspaso de ' + m.de_almacen, signo: 1, clave: 'traspaso', tono: 'entra'};
+      if (alm && m.de_almacen === alm) return {texto: 'Traspaso a ' + m.a_almacen, signo: -1, clave: 'traspaso', tono: 'neutro'};
+      return {texto: 'Traspaso', signo: 0, clave: 'traspaso', tono: 'neutro'};
     }
-    return {texto: 'Cambio de lugar', signo: 0};
+    return {texto: 'Cambio de lugar', signo: 0, clave: 'lugar', tono: 'neutro'};
   }
 
   // Fecha y hora en México: "23 nov, 1:23 p. m."

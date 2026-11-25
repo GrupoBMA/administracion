@@ -85,3 +85,17 @@ test('clase de existencia', () => {
   assert.strictEqual(L.clase({categoria: 'SUNL / ATV', seguimiento: 'serial'}), 'vehiculos');
   assert.strictEqual(L.clase({categoria: 'SUNL', seguimiento: 'none'}), 'otros');
 });
+
+test('familia y variante: todas las ATV juntas', () => {
+  const p = L.producto({nombre: '[ATV125-CR-VEC] ATV O CUATRIMOTO 125 CC (VERDE CAMU)', categoria: 'SUNL / ATV / 125 cc'});
+  assert.deepStrictEqual([p.familia, p.variante, p.color], ['ATV', '125 cc', 'Verde Camu']);
+  assert.deepStrictEqual([L.producto({nombre: 'X', categoria: 'SUNL / GO KART / 200 cc'}).familia, L.producto({nombre: 'X', categoria: 'SUNL / ATV / ELÉCTRICA'}).variante], ['Go Kart', 'Eléctrica']);
+  const s = L.producto({nombre: 'SILLA ELECTRICA', categoria: 'SUNL'});
+  assert.deepStrictEqual([s.familia, s.variante], ['Silla Electrica', '']);
+});
+
+test('serie corta: últimos 5 de un VIN', () => {
+  assert.strictEqual(L.serieCorta('L0SSAAL08ST000535'), '00535');
+  assert.strictEqual(L.serieCorta('SILLA-E-AGS-01'), 'SILLA-E-AGS-01');
+  assert.strictEqual(L.serieCorta(''), '');
+});

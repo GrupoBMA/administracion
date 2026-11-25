@@ -30,9 +30,17 @@
       var ancho = anchoPasto(p);
       return {titulo: 'Pasto ' + capital(sub ? sub[1] : nombre) + (ancho ? ' · ' + ancho + ' m' : ''), color: '', empresa: 'Pastito', codigo: p.codigo || ''};
     }
-    tipo = tipo ? capital(tipo) : capital(nombre.replace(/\([^()]*\)\s*$/, '').split(/\s+NUEV[OA]\b/i)[0]);
-    tipo = tipo.replace(/\b(Atv|Utv)\b/g, function (s) { return s.toUpperCase(); });
-    return {titulo: tipo, color: color, empresa: capital(empresa), codigo: p.codigo || ''};
+    var siglas = function (s) { return s.replace(/\b(Atv|Utv)\b/g, function (x) { return x.toUpperCase(); }); };
+    tipo = siglas(tipo ? capital(tipo) : capital(nombre.replace(/\([^()]*\)\s*$/, '').split(/\s+NUEV[OA]\b/i)[0]));
+    // familia: "ATV" (todas las ATV juntas); variante: lo que la distingue dentro ("125 cc", "Eléctrica")
+    var familia = partes.length > 1 ? siglas(capital(partes[1])) : tipo;
+    var variante = partes.length > 2 ? siglas(capital(partes.slice(2).join(' '))) : '';
+    return {titulo: tipo, color: color, empresa: capital(empresa), codigo: p.codigo || '', familia: familia, variante: variante};
+  }
+  // Número de serie corto: de un VIN de 17 solo sirven a simple vista los últimos 5. Lo que no parece VIN va completo.
+  function serieCorta(s) {
+    s = String(s || '');
+    return /^[A-Z0-9]{11,}$/i.test(s) ? s.slice(-5) : s;
   }
 
   // Ancho del pasto (2 o 4 m): de la clave "P-OA-2M-18MM" o del nombre "(2 m)"
@@ -135,7 +143,7 @@
     sin_movimientos: 'Sin movimientos en Odoo'
   };
 
-  return {nombreAlmacen: nombreAlmacen, producto: producto, anchoPasto: anchoPasto, rollos: rollos, serie: serie,
+  return {nombreAlmacen: nombreAlmacen, producto: producto, anchoPasto: anchoPasto, rollos: rollos, serie: serie, serieCorta: serieCorta,
           tipoMov: tipoMov, fechaHora: fechaHora, hace: hace, lunes: lunes, semana: semana, cantidad: cantidad, clase: clase,
           ALERTAS: ALERTAS, capital: capital};
 });

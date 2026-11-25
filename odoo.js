@@ -36,68 +36,74 @@
     actualizar: '<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/>'
   };
   function ico(k) { return '<svg class="od-ic" viewBox="0 0 24 24" aria-hidden="true">' + (IC[k] || IC.lugar) + '</svg>'; }
-  // Siluetas de lado (viewBox 0 0 64 40), todas mirando a la derecha, como íconos rellenos: se reconocen sin detalle.
-  // Relleno = color del texto; ".h" = hueco del color del fondo (--hueco).
-  var RUEDA = function (x, y, r) {
-    return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '"/><circle class="h" cx="' + x + '" cy="' + y + '" r="' + (r * 0.5) + '"/>' +
-      '<circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.22) + '"/>';
+  // Siluetas de lado (viewBox 0 0 64 40), todas mirando a la derecha y sobre el mismo piso (y = 37).
+  // Estilo propio: rellenas, esquinas redondeadas, llanta = aro con centro hueco y maza; uno o dos huecos como máximo.
+  // Relleno = color del texto; ".h" = hueco del color del fondo (--hueco). Inspiradas en colecciones libres
+  // (Material Design, Iconoven, UIX) y en dos ejemplos que mandó el usuario (motocarro y ATV).
+  var RUEDA = function (x, r) {
+    var y = 37 - r;
+    return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '"/><circle class="h" cx="' + x + '" cy="' + y + '" r="' + (r * 0.52) + '"/>' +
+      '<circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.24) + '"/>';
   };
+  var TRAZO = function (d, g) { return '<path d="' + d + '" fill="none" stroke="currentColor" stroke-width="' + (g || 3) + '" stroke-linecap="round" stroke-linejoin="round"/>'; };
   var SIL = {
     motocarro:
-      '<rect x="3" y="10" width="31" height="17" rx="1.5"/><rect x="3" y="27" width="42" height="3"/>' +
-      '<path d="M33 25h13l3-5h5l2 6v4H33z"/><path d="M50 20l2-8 3-1" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
-      '<path d="M54 22l3 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M38 23c2-3 6-4 9-3" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>' +
-      RUEDA(14, 32, 6) + RUEDA(56, 32, 6),
-    mototaxi:
-      '<rect x="5" y="4" width="44" height="4" rx="2"/>' +
-      '<rect x="7" y="7" width="3" height="12"/><rect x="36" y="7" width="3" height="13"/>' +
-      '<path d="M5 30V19h34v11z"/><path d="M38 30V13l7-6h3l9 14v9z"/><path class="h" d="M43 11h4l6 9h-10z"/>' +
-      RUEDA(15, 32, 5.5) + RUEDA(52, 32, 5.5),
+      '<rect x="3" y="18" width="34" height="8" rx="1.5"/><rect x="7" y="25" width="34" height="3" rx="1"/>' +
+      '<path d="M38 28V9a3 3 0 0 1 3-3h7c3.5 0 5.6 2.4 6.4 6L57 23v5z"/><rect class="h" x="41" y="9" width="7" height="12" rx="1.5"/>' +
+      '<rect x="42.5" y="17" width="5" height="5" rx="1"/>' +
+      RUEDA(14, 6) + RUEDA(52, 6),
     atv:
-      '<path d="M6 25c0-5 4-8 9-8h8l3-3h12l3 3h8c5 0 9 3 9 8v2H6z"/><rect x="21" y="12" width="13" height="3" rx="1.5"/>' +
-      '<path d="M44 16l2-7h4" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
-      RUEDA(16, 30, 7.5) + RUEDA(48, 30, 7.5),
+      '<path d="M3 24c0-6 5-10 11-10s10.5 3.5 11 8h13c.5-4.5 5-8 11-8s11 4 11 10h-3.5c-.3-4-3.5-6.5-7.5-6.5s-7.2 2.6-7.5 6.5H21.5c-.3-3.9-3.5-6.5-7.5-6.5S6.8 20 6.5 24z"/>' +
+      '<path d="M22 22l3-7h15l2 7z"/><rect x="23" y="10" width="15" height="4.5" rx="2.25"/>' +
+      '<rect x="3" y="11" width="11" height="2.6" rx="1.3"/><rect x="49" y="11" width="11" height="2.6" rx="1.3"/>' +
+      TRAZO('M42 15l3-8M42 7h6') +
+      RUEDA(14, 8.5) + RUEDA(50, 8.5),
+    mototaxi:
+      '<path d="M5 30V11a7 7 0 0 1 7-7h29c6 0 10 3.6 12 9l4.5 11v6z"/>' +
+      '<path class="h" d="M9 9h16v15H9z"/><path class="h" d="M29 9h11c3.5 0 6 2 7.3 5.5L50 22H29z"/>' +
+      '<rect x="11" y="18" width="12" height="4" rx="1.5"/>' +
+      RUEDA(15, 5.5) + RUEDA(52, 5.5),
     cross:
-      '<path d="M18 21l7-5h13l6-4 3 2-4 7-9 4H24z"/><rect x="22" y="12" width="14" height="3.5" rx="1.75"/>' +
-      '<path d="M45 10l7 21M42 9l6-1" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>' +
-      '<path d="M12 31l14-5" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>' +
-      RUEDA(12, 31, 7) + RUEDA(52, 31, 7),
+      '<path d="M17 23l8-6h13l7-5 4 1-3 7-9 5H26z"/><rect x="21" y="13" width="17" height="4" rx="2"/>' +
+      '<rect x="26" y="22" width="10" height="6" rx="1.5"/>' +
+      TRAZO('M46 12l6 18M42 7l7-1.5M46 7v5') + TRAZO('M12 30l15-6') +
+      '<path d="M49 18l9-2-2 3.5z"/>' +
+      RUEDA(12, 7) + RUEDA(52, 7),
     utv:
-      '<path d="M3 27l4-5h47l7 3v3H3z"/>' +
-      '<path d="M13 22l6-14h20l11 14M28 8v14M50 22l4-6" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
-      '<path d="M20 22v-6c0-1 .8-2 2-2h3v8z"/><rect x="2" y="19" width="9" height="3" rx="1"/>' +
-      RUEDA(15, 30, 8) + RUEDA(50, 30, 8),
+      '<path d="M3 28v-3.5l3.5-3.5H40l6-3h8l7 6v4z"/>' +
+      TRAZO('M14 21l5-13h19l8 10M27 8v13', 2.4) +
+      '<path d="M19 21v-5a2 2 0 0 1 2-2h4v7z"/>' +
+      RUEDA(14, 8.5) + RUEDA(51, 8.5),
     gokart:
-      '<path d="M5 29h47l7-4v4l-2 2H5z"/>' +
-      '<path d="M16 28c0-7 2-12 7-12h4l2 12z"/>' +
-      '<path d="M35 27l6-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><ellipse cx="42" cy="15" rx="2" ry="4.5" transform="rotate(30 42 15)"/>' +
-      '<rect x="6" y="20" width="8" height="7" rx="1.5"/>' +
-      RUEDA(12, 32, 6) + RUEDA(51, 32, 6),
+      '<rect x="6" y="26" width="50" height="3.4" rx="1.7"/><path d="M44 26l10-3.5h4l2 3.5z"/>' +
+      '<path d="M18 26v-9a3 3 0 0 1 3-3h3.5l1.5 12z"/><rect x="7" y="19" width="8" height="7" rx="1.5"/>' +
+      TRAZO('M33 26l6-9') + '<ellipse cx="40" cy="15.5" rx="2" ry="4.2" transform="rotate(30 40 15.5)"/>' +
+      RUEDA(12, 7) + RUEDA(52, 5.5),
     patin:
-      '<path d="M13 28c1-8 7-12 15-12h6l6 12z"/><rect x="18" y="12" width="14" height="4" rx="2"/>' +
-      '<path d="M48 32L44 9M40 8c3-1 6-1 9 1" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>' +
-      RUEDA(13, 31, 7) + RUEDA(49, 31, 7),
+      '<path d="M10 28c1.5-8 7.5-12 16-12h8l6 12z"/><rect x="16" y="11" width="15" height="4.5" rx="2.25"/>' +
+      TRAZO('M48 30L44 8M41 8.5c3-1.2 6-1.2 9 0') +
+      RUEDA(13, 7.5) + RUEDA(48, 7.5),
     bici:
       '<g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">' +
-      '<circle cx="14" cy="28" r="8"/><circle cx="50" cy="28" r="8"/><path d="M14 28l9-14h18l9 14M23 14l9 14h9M41 14l-2-5h-4M20 9h7"/></g>' +
-      '<circle cx="32" cy="28" r="3"/>',
+      '<circle cx="13" cy="28" r="8"/><circle cx="51" cy="28" r="8"/><path d="M13 28l9-14h18l11 14M22 14l9 14h9M40 14l-2-6h-4M19 9h7"/></g>' +
+      '<rect x="24" y="17" width="10" height="5" rx="1.5" transform="rotate(-57 29 19.5)"/><circle cx="31" cy="28" r="3"/>',
     silla:
-      '<path d="M16 4h4v15h17l6 13" stroke="currentColor" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
-      '<rect x="16" y="17" width="20" height="4" rx="2"/>' +
-      '<circle cx="26" cy="28" r="9.5"/><circle class="h" cx="26" cy="28" r="6.5"/><circle cx="26" cy="28" r="2"/><circle cx="46" cy="34" r="3"/>',
+      TRAZO('M16 4h4v15h17l6 13', 3.4) + '<rect x="16" y="17" width="20" height="4" rx="2"/>' +
+      '<circle cx="26" cy="27.5" r="9.5"/><circle class="h" cx="26" cy="27.5" r="6.3"/><circle cx="26" cy="27.5" r="2.2"/><circle cx="46" cy="34" r="3"/>',
     montacargas:
-      '<path d="M4 30V18h8l5-11h12v23z"/><path class="h" d="M18 10h8v8h-12z"/>' +
-      '<rect x="31" y="4" width="4" height="27"/><rect x="35" y="28" width="22" height="3" rx="1"/><rect x="35" y="16" width="4" height="15"/>' +
-      RUEDA(11, 32, 5.5) + RUEDA(27, 32, 5.5),
+      '<path d="M4 30V19a2 2 0 0 1 2-2h7l5-11h11v24z"/><path class="h" d="M19.5 9H26v8H16z"/>' +
+      '<rect x="31" y="4" width="4.5" height="27" rx="1"/><rect x="35" y="28" width="23" height="3" rx="1.2"/><rect x="35.5" y="15" width="4" height="16"/>' +
+      RUEDA(11, 5.5) + RUEDA(26, 5.5),
     chasis:
-      '<rect x="4" y="16" width="56" height="4" rx="1"/><rect x="4" y="25" width="56" height="4" rx="1"/>' +
-      '<rect x="8" y="16" width="4" height="13"/><rect x="22" y="16" width="4" height="13"/><rect x="38" y="16" width="4" height="13"/><rect x="52" y="16" width="4" height="13"/>',
+      '<rect x="4" y="15" width="56" height="4" rx="1.5"/><rect x="4" y="25" width="56" height="4" rx="1.5"/>' +
+      '<rect x="8" y="15" width="4" height="14"/><rect x="22" y="15" width="4" height="14"/><rect x="38" y="15" width="4" height="14"/><rect x="52" y="15" width="4" height="14"/>',
     padel:
-      '<ellipse cx="24" cy="16" rx="12" ry="13"/><circle class="h" cx="20" cy="12" r="1.6"/><circle class="h" cx="27" cy="12" r="1.6"/>' +
-      '<circle class="h" cx="20" cy="19" r="1.6"/><circle class="h" cx="27" cy="19" r="1.6"/>' +
-      '<path d="M32 26l9 9" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="30" r="5"/>',
+      '<ellipse cx="25" cy="16" rx="12" ry="13"/><circle class="h" cx="21" cy="12" r="1.7"/><circle class="h" cx="28" cy="12" r="1.7"/>' +
+      '<circle class="h" cx="21" cy="19" r="1.7"/><circle class="h" cx="28" cy="19" r="1.7"/>' +
+      TRAZO('M33 26l8 8', 5) + '<circle cx="51" cy="31" r="5"/>',
     caja:
-      '<path d="M12 12l20-7 20 7v19l-20 7-20-7z"/><path class="h" d="M32 19v17" stroke-width="0"/><path d="M12 12l20 7 20-7" stroke="var(--hueco)" stroke-width="2" fill="none"/><path d="M32 19v18" stroke="var(--hueco)" stroke-width="2"/>'
+      '<path d="M12 12l20-7 20 7v19l-20 7-20-7z"/>' +
+      '<path d="M12 12l20 7 20-7M32 19v19" fill="none" stroke="var(--hueco)" stroke-width="2"/>'
   };
   // Silueta en su casilla de color (clase: od-sil-tile, od-sil-cab, od-sil-ficha, od-sil-fila)
   function imagen(fig, clase) {

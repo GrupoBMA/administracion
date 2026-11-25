@@ -37,6 +37,39 @@
     var variante = partes.length > 2 ? siglas(capital(partes.slice(2).join(' '))) : '';
     return {titulo: tipo, color: color, empresa: capital(empresa), codigo: p.codigo || '', familia: familia, variante: variante};
   }
+  function sinAcentos(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+
+  // Qué dibujo le toca a un producto: por su familia o, si no hay categoría, por palabras del nombre
+  var FIGURAS = [
+    ['mototaxi', /mototaxi/], ['motocarro', /motocarro/], ['utv', /\butv\b|razer|side ?by/], ['gokart', /go ?kart/],
+    ['atv', /\batv\b|cuatrimoto/], ['patin', /patin|scooter/], ['bici', /bici/], ['silla', /silla/],
+    ['montacargas', /montacarga|maquinaria/], ['chasis', /chasis|manufactura|plataforma/], ['padel', /padel/],
+    ['cross', /cross|motocicleta|\bmoto\b/]
+  ];
+  function figura(familia, nombre) {
+    var t = sinAcentos(familia) + ' | ' + sinAcentos(nombre);
+    var f = FIGURAS.filter(function (x) { return x[1].test(sinAcentos(familia)); })[0] || FIGURAS.filter(function (x) { return x[1].test(t); })[0];
+    return f ? f[0] : 'caja';
+  }
+
+  // Muestra del color: hasta dos colores reconocidos del nombre ("Blanco Camu Maple" -> blanco y camuflaje)
+  var COLORES = {azul: '#2F6FD6', rojo: '#D33A2C', roja: '#D33A2C', verde: '#3E8E4E', negro: '#232323', negra: '#232323', blanco: '#F4F4F0', blanca: '#F4F4F0',
+    amarillo: '#F2C230', naranja: '#F07F1A', rosa: '#E86AA6', morado: '#7D4FC4', gris: '#8D8F8A', plata: '#C0C3C7', plateado: '#C0C3C7',
+    cafe: '#7A5233', dorado: '#C9A13B', camu: '#6E6B45', camuflaje: '#6E6B45', maple: '#C9A06A', arena: '#D6C29B', vino: '#7B1F33',
+    turquesa: '#2AB3B1', lila: '#B79BE0', celeste: '#7EC3EE', beige: '#D9C7A3', guinda: '#7B1F33'};
+  function muestraColor(color) {
+    var r = [];
+    sinAcentos(color).split(/[^a-z]+/).forEach(function (w) { if (COLORES[w] && r.indexOf(COLORES[w]) < 0 && r.length < 2) r.push(COLORES[w]); });
+    return r;
+  }
+
+  // Días que lleva algo en un lugar y su semáforo: verde hasta 30, amarillo hasta 3 meses, naranja hasta un año, rojo más
+  function dias(desde, ahora) {
+    var a = Date.parse(diaMx(ahora ? new Date(ahora).toISOString() : new Date().toISOString())), b = Date.parse(diaMx(desde));
+    return Math.max(0, Math.round((a - b) / 864e5));
+  }
+  function semaforo(d) { return d <= 30 ? 'verde' : d <= 90 ? 'amarillo' : d <= 365 ? 'naranja' : 'rojo'; }
+
   // Número de serie corto: de un VIN de 17 solo sirven a simple vista los últimos 5. Lo que no parece VIN va completo.
   function serieCorta(s) {
     s = String(s || '');
@@ -143,7 +176,7 @@
     sin_movimientos: 'Sin movimientos en Odoo'
   };
 
-  return {nombreAlmacen: nombreAlmacen, producto: producto, anchoPasto: anchoPasto, rollos: rollos, serie: serie, serieCorta: serieCorta,
+  return {nombreAlmacen: nombreAlmacen, producto: producto, anchoPasto: anchoPasto, rollos: rollos, serie: serie, serieCorta: serieCorta, figura: figura, muestraColor: muestraColor, dias: dias, semaforo: semaforo,
           tipoMov: tipoMov, fechaHora: fechaHora, hace: hace, lunes: lunes, semana: semana, cantidad: cantidad, clase: clase,
           ALERTAS: ALERTAS, capital: capital};
 });

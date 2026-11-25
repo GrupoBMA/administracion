@@ -5,7 +5,8 @@
 // Nada aquí escribe en Odoo.
 (function () {
   var esc = BMA.esc, L = OdooL, $ = function (id) { return document.getElementById(id); };
-  var st = {op: 'od-existencias', dia: null, alm: null, clase: 'vehiculos', abiertos: {}, movAlm: null, q: '', vista: 'pendiente', grupos: {}, pintado: null};
+  var st = {op: 'od-existencias', dia: null, alm: null, fam: null, vari: {}, clase: 'vehiculos', abiertos: {}, movAlm: null, q: '', vista: 'pendiente', grupos: {}, pintado: null};
+  var copiaEs = {clave: null, es: null};
   var resumen = null, actualizando = false, tBuscar = null, panelLote = null, panelProd = null;
 
   // ---------------------------------------------------------------- Íconos (mismo trazo que los del menú)
@@ -31,6 +32,18 @@
     persona: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.3-3.3 3.8-5 7-5s5.7 1.7 7 5"/>',
     check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
     flecha: '<path d="m9 6 6 6-6 6"/>',
+    atv: '<circle cx="6" cy="16.5" r="3.2"/><circle cx="18" cy="16.5" r="3.2"/><path d="M2.5 13.5c1.2-2.6 5.8-2.6 7 0h5c1.2-2.6 5.8-2.6 7 0"/><path d="M8.5 10.5h6l1.2 3"/><path d="M16.2 10.5 17.8 7h2.2"/>',
+    cross: '<circle cx="5.5" cy="16.5" r="3.5"/><circle cx="18.5" cy="16.5" r="3.5"/><path d="M5.5 16.5 9.5 11h6l3 5.5"/><path d="M8 8.8h5.5"/><path d="M15.5 11 17 6.5h2.5"/>',
+    utv: '<circle cx="6" cy="17" r="2.8"/><circle cx="18" cy="17" r="2.8"/><path d="M2.5 14h19"/><path d="M6.5 14V7h8.5l3.5 7"/><path d="M10.8 7v7"/>',
+    gokart: '<circle cx="5.5" cy="17" r="2.5"/><circle cx="18.5" cy="17" r="2.5"/><path d="M2.5 14h19"/><path d="M7.5 14v-3.5h4l1 3.5"/><path d="M15.5 14 17 9.5"/><path d="M15.5 9.5h3"/>',
+    motocarro: '<circle cx="6" cy="17.5" r="2.3"/><circle cx="18" cy="17.5" r="2.3"/><path d="M3.7 17.5V9.5h4.8l2.5 4v4"/><path d="M11 10.5h9.5v7"/><path d="M8.3 17.5h7.4"/>',
+    mototaxi: '<circle cx="6" cy="17.5" r="2.3"/><circle cx="18" cy="17.5" r="2.3"/><path d="M3.7 15V8.5A2.5 2.5 0 0 1 6.2 6h10.3l4 7v4.5"/><path d="M3.7 15h16.8"/><path d="M8.3 17.5h7.4"/><path d="M10.5 6v9"/>',
+    patin: '<circle cx="5.5" cy="17.5" r="2"/><circle cx="18.5" cy="17.5" r="2"/><path d="M7.5 17.5h9"/><path d="M18.5 17.5 15.5 5h-3"/>',
+    bici: '<circle cx="5.5" cy="16" r="3.5"/><circle cx="18.5" cy="16" r="3.5"/><path d="M5.5 16 9 9.5h7l2.5 6.5"/><path d="M9 9.5l3.5 6.5H16"/><path d="M7.8 7.5h2.6M14.8 7h2.5"/>',
+    silla: '<circle cx="10" cy="16" r="4"/><circle cx="18" cy="18.8" r="1.4"/><path d="M7 4.5V12h7.5l3 6.5"/><path d="M7 8h6"/>',
+    montacargas: '<circle cx="6.5" cy="17.5" r="2.3"/><circle cx="14.5" cy="17.5" r="2.3"/><path d="M4.2 15V9.5h4l3 5.5h6"/><path d="M8.2 9.5V5.5h3.5"/><path d="M19 4v13.5h2.5"/>',
+    chasis: '<path d="M3.5 8h17M3.5 16h17M7 8v8M12 8v8M17 8v8"/>',
+    padel: '<ellipse cx="10" cy="9.5" rx="5.5" ry="6"/><path d="m13.6 14 5.4 5.5"/><path d="M8 8h.01M11 8h.01M9.5 11h.01" stroke-width="2.4"/>',
     info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><path d="M12 7.8h.01" stroke-width="2.6"/>',
     actualizar: '<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/>'
   };
@@ -65,16 +78,17 @@
   // Si solo cambió la serie (abrir o cerrar su ficha), no se vuelve a pintar lo de abajo.
   function abrir(op, seguir, estado) {
     var serie = seguir && estado ? estado.odSerie || null : null;
-    if (seguir && estado && op === st.op && st.pintado === op + '|' + (estado.odAlm || '')) { panel(serie); return; }
+    if (seguir && estado && op === st.op && st.pintado === op + '|' + (estado.odAlm || '') + '|' + (estado.odFam || '')) { panel(serie); return; }
     st.op = op;
-    if (!seguir) { st.alm = null; st.abiertos = {}; st.q = ''; }
-    else if (estado && op === 'od-existencias') st.alm = estado.odAlm || null;
+    if (!seguir) { st.alm = null; st.fam = null; st.abiertos = {}; st.q = ''; }
+    else if (estado && op === 'od-existencias') { st.alm = estado.odAlm || null; st.fam = estado.odFam || null; }
     panel(serie);
     pintar();
   }
 
   function pintar() {
-    st.pintado = st.op + '|' + (st.op === 'od-existencias' && st.alm ? st.alm : '');
+    var ex = st.op === 'od-existencias';
+    st.pintado = st.op + '|' + (ex && st.alm || '') + '|' + (ex && st.fam || '');
     if (st.op === 'od-movimientos') return movimientos();
     if (st.op === 'od-revisar') return revisar();
     return existencias();
@@ -147,7 +161,7 @@
       if (!rs.length) { el.innerHTML = '<div class="od-nada">' + icoC('buscar', 'neutro') + '<b>No hay ninguna serie con “' + esc(st.q) + '”</b></div>'; return; }
       el.innerHTML = '<div class="renglones">' + rs.slice(0, 30).map(function (r, i) {
         var s = L.serie(r.lote), ahora = dondeEsta(r);
-        return '<button type="button" class="renglon od-fila" data-i="' + i + '">' + icoC('moto', ahora.tono) +
+        return '<button type="button" class="renglon od-fila" data-i="' + i + '">' + icoC(L.figura('', r.producto || ''), ahora.tono) +
           '<span class="od-fila-txt"><b class="num">' + resaltar(L.serieCorta(s.serie), st.q) + '</b><small>' + esc(nombreProducto(r)) + '</small></span>' +
           '<span class="od-fila-der' + (ahora.tono === 'alerta' ? ' od-alerta' : '') + '">' + esc(ahora.corto) + '</span>' + ico('flecha') + '</button>';
       }).join('') + '</div>' + (rs.length > 30 ? '<p class="mas-res">Y ' + (rs.length - 30) + ' más. Escribe más números de la serie.</p>' : '');
@@ -176,7 +190,7 @@
       var raro = Number(hoy[0].cantidad) !== 1;
       return {tono: raro ? 'alerta' : 'entra', ico: 'lugar', titulo: raro ? 'Hoy está en (cantidad ' + num(hoy[0].cantidad) + ')' : 'Hoy está en',
               lugar: nomAlm(hoy[0].almacen), corto: nomAlm(hoy[0].almacen),
-              desde: (movs.filter(function (m) { return m.a_almacen === hoy[0].almacen; }).pop() || {}).fecha || hoy[0].desde};
+              desde: (movs.filter(function (m) { return m.a_almacen === hoy[0].almacen && m.de_almacen !== hoy[0].almacen && m.de_uso !== 'production'; }).pop() || {}).fecha || hoy[0].desde};
     }
     if (ult && ult.a_uso === 'customer') return {tono: 'venta', ico: 'venta', titulo: 'Se vendió', lugar: ult.cliente || 'Cliente', corto: 'Vendida', desde: ult.fecha};
     return {tono: 'neutro', ico: 'lugar', titulo: 'Hoy no está en ningún almacén', lugar: '', corto: 'Sin lugar'};
@@ -186,7 +200,7 @@
   // Se abre encima (a la derecha en computadora, pantalla completa en celular). El "atrás" la cierra.
   function abrirSerie(lote, prod, datos) {
     if (!lote) return;
-    try { history.pushState(Object.assign({}, history.state, {op: st.op, odAlm: st.op === 'od-existencias' ? st.alm : null, odSerie: lote}), ''); } catch (x) {}
+    try { history.pushState(Object.assign({}, history.state, {op: st.op, odAlm: st.op === 'od-existencias' ? st.alm : null, odFam: st.op === 'od-existencias' ? st.fam : null, odSerie: lote}), ''); } catch (x) {}
     panelProd = prod || null;
     panel(lote, datos);
   }
@@ -230,7 +244,8 @@
   function cabSerie(lote, r) {
     var s = L.serie(lote);
     var nombre = panelProd ? panelProd.titulo + (panelProd.color ? ' · ' + panelProd.color : '') : (r ? nombreProducto(r) : '');
-    return '<div class="od-s-cab">' + icoC('moto', 'neutro', 'od-icc-xl') +
+    var crudo = r ? r.producto || (r.movimientos && r.movimientos.length ? r.movimientos[0].producto : '') || '' : '';
+    return '<div class="od-s-cab">' + icoC(L.figura(panelProd ? panelProd.familia : '', crudo || nombre), 'venta', 'od-icc-xl') +
       '<h2 id="od-p-tit" class="num">' + esc(L.serieCorta(s.serie)) + '</h2>' +
       (nombre ? '<p class="od-s-prod">' + esc(nombre) + '</p>' : '') + '</div>' + (r ? info(lote, r) : '');
   }
@@ -254,7 +269,8 @@
     var ahora = dondeEsta(r), movs = r.movimientos || [];
     var h = '<div class="od-ahora tono-' + ahora.tono + '">' + icoC(ahora.ico, ahora.tono, 'od-icc-lg') +
       '<div><small>' + esc(ahora.titulo) + '</small>' + (ahora.lugar ? '<b>' + esc(ahora.lugar) + '</b>' : '') +
-      (ahora.desde ? '<span>' + (ahora.tono === 'venta' ? 'el ' : 'desde el ') + esc(L.fechaHora(ahora.desde).split(', ')[0]) + '</span>' : '') + '</div></div>';
+      (ahora.desde ? '<span>' + (ahora.tono === 'venta' ? 'el ' : 'desde el ') + esc(L.fechaHora(ahora.desde).split(', ')[0]) +
+        (ahora.tono === 'entra' ? diasAqui(ahora.desde) : '') + '</span>' : '') + '</div></div>';
     if (!movs.length) return h + '<p class="vacio">Sin movimientos en Odoo.</p>';
     h += '<ol class="od-ruta" aria-label="Su recorrido">' + movs.map(function (m, i) {
       var t = L.tipoMov(m), ultimo = i === movs.length - 1;
@@ -269,6 +285,11 @@
         '</div></li>';
     }).join('') + '</ol>';
     return h;
+  }
+  // " · 33 días" con su punto de semáforo
+  function diasAqui(desde) {
+    var d = L.dias(desde);
+    return ' · <i class="od-sem sem-' + L.semaforo(d) + '"></i>' + d + (d === 1 ? ' día' : ' días');
   }
   // Nombre corto del lugar de salida o de llegada de un movimiento
   function lugarDe(m, lado) {
@@ -296,7 +317,7 @@
       cont().innerHTML = h; enganchar();
       cont().querySelector('.od-casillas').onclick = function (e) {
         var b = e.target.closest('[data-alm]'); if (!b) return;
-        st.alm = b.dataset.alm; st.clase = 'vehiculos'; st.abiertos = {};
+        st.alm = b.dataset.alm; st.fam = null; st.clase = 'vehiculos'; st.abiertos = {};
         try { history.pushState({op: st.op, odAlm: st.alm}, ''); } catch (x) {}
         pintar(); window.scrollTo(0, 0);
       };
@@ -323,12 +344,17 @@
         (a.ultimo_mov ? 'Sin moverse ' + esc(L.hace(a.ultimo_mov).replace('hace ', '')) : 'Nunca ha tenido movimientos') + '</span>' : '') + '</button>';
   }
 
+  // Una sucursal: casillas por familia (ATV, Cross…). Al picar una familia se entra a ella (con "atrás").
   function almacen() {
     var a = resumen.almacenes.filter(function (x) { return x.codigo === st.alm; })[0];
     if (!a) { st.alm = null; return existencias(); }
-    UI.llamar('bma_odoo_existencias', {p_almacen: st.alm, p_dia: st.dia}).then(function (es) {
+    var clave = st.alm + '|' + (st.dia || '') + '|' + (resumen.ultima_copia ? resumen.ultima_copia.fin : '');
+    var listo = copiaEs.clave === clave ? Promise.resolve(copiaEs.es)
+      : UI.llamar('bma_odoo_existencias', {p_almacen: st.alm, p_dia: st.dia}).then(function (es) { copiaEs = {clave: clave, es: es}; return es; });
+    listo.then(function (es) {
       var por = {vehiculos: [], pasto: [], otros: []};
       es.forEach(function (e) { por[L.clase(e)].push(e); });
+      if (st.fam) return familia(a, por);
       var suma = function (l) { return l.reduce(function (s, e) { return s + Number(e.cantidad); }, 0); };
       if (!por[st.clase].length) st.clase = ['vehiculos', 'pasto', 'otros'].filter(function (k) { return por[k].length; })[0] || 'vehiculos';
       var h = '<div class="ficha-top"><button type="button" class="volver" id="od-volver">‹ Todas</button></div>' +
@@ -339,53 +365,98 @@
           {valor: 'otros', nombre: 'Otros', cuenta: num(suma(por.otros))}].filter(function (o) {
             return o.valor === 'vehiculos' || o.valor === st.clase || por[o.valor].length; }).map(function (o) {
             o.ico = ico(ICO_CLASE[o.valor]); return o; }), st.clase) + antesDeLaCopia();
-      h += '<div id="od-lista">' + (st.clase === 'pasto' ? listaPasto(por.pasto) : listaPiezas(por[st.clase])) + '</div>';
+      h += '<div id="od-lista">' + (st.clase === 'pasto' ? listaPasto(por.pasto) : casillasFamilia(por[st.clase])) + '</div>';
       cont().innerHTML = h; enganchar();
       $('od-volver').onclick = function () { history.back(); };
       $('od-clase').onclick = function (e) {
         var b = e.target.closest('[data-valor]'); if (b && b.dataset.valor !== st.clase) { st.clase = b.dataset.valor; almacen(); }
       };
       $('od-lista').onclick = function (e) {
-        var s = e.target.closest('[data-serie]');
-        if (s) { var x = es.filter(function (y) { return y.lote === s.dataset.serie; })[0]; abrirSerie(s.dataset.serie, x ? L.producto(x) : null); return; }
-        var g = e.target.closest('[data-prod]') || e.target.closest('[data-fam]');
-        if (!g) return;
-        var k = g.dataset.prod || 'f:' + g.dataset.fam;
-        st.abiertos[k] = !st.abiertos[k]; almacen();
+        var g = e.target.closest('[data-fam]'); if (!g) return;
+        st.fam = g.dataset.fam; st.abiertos = {};
+        try { history.pushState({op: st.op, odAlm: st.alm, odFam: st.fam}, ''); } catch (x) {}
+        pintar(); window.scrollTo(0, 0);
       };
     }).catch(function () {});
   }
 
-  // Vehículos y otros: una fila por familia (ATV, Cross, UTV…) con su total; al picar, sus modelos (variante y color);
-  // al picar un modelo, sus series en casillas con los últimos 5 de la serie.
-  function listaPiezas(es) {
-    if (!es.length) return '<p class="vacio">No hay nada aquí ' + (st.dia ? 'ese día' : 'hoy') + '.</p>';
+  // Agrupa piezas: familia -> cilindrada (variante) -> modelo (color)
+  function agrupar(es) {
     var fams = {}, orden = [];
     es.forEach(function (e) {
-      var p = L.producto(e), f = p.familia, n = Number(e.cantidad);
-      if (!fams[f]) { fams[f] = {n: 0, prods: {}, lista: []}; orden.push(f); }
-      var F = fams[f]; F.n += n;
-      if (!F.prods[e.producto_id]) { F.prods[e.producto_id] = {id: e.producto_id, p: p, filas: [], n: 0}; F.lista.push(F.prods[e.producto_id]); }
-      F.prods[e.producto_id].filas.push(e); F.prods[e.producto_id].n += n;
+      var p = L.producto(e), n = Number(e.cantidad), f = p.familia;
+      if (!fams[f]) { fams[f] = {nombre: f, n: 0, fig: L.figura(f, e.nombre), vars: {}, ordenV: []}; orden.push(f); }
+      var F = fams[f], v = p.variante; F.n += n;
+      if (!F.vars[v]) { F.vars[v] = {nombre: v, n: 0, prods: {}, lista: []}; F.ordenV.push(v); }
+      var V = F.vars[v]; V.n += n;
+      if (!V.prods[e.producto_id]) { V.prods[e.producto_id] = {id: e.producto_id, p: p, filas: [], n: 0}; V.lista.push(V.prods[e.producto_id]); }
+      V.prods[e.producto_id].filas.push(e); V.prods[e.producto_id].n += n;
     });
+    var cc = function (v) { return parseFloat(v) || 9999; };
     orden.sort(function (a, b) { return fams[b].n - fams[a].n || a.localeCompare(b); });
-    var cc = function (x) { return parseFloat(x.p.variante) || 9999; };
-    return '<div class="renglones">' + orden.map(function (f) {
-      var F = fams[f], abierto = st.abiertos['f:' + f];
-      F.lista.sort(function (a, b) { return cc(a) - cc(b) || a.p.variante.localeCompare(b.p.variante) || a.p.color.localeCompare(b.p.color); });
-      return '<button type="button" class="renglon od-fam' + (abierto ? ' abierto' : '') + '" data-fam="' + esc(f) + '" aria-expanded="' + !!abierto + '">' +
-        '<span class="od-fam-nom">' + esc(f) + '</span><span class="od-fam-n num' + (F.n < 0 ? ' od-alerta' : '') + '">' + num(F.n) + '</span>' + ico('flecha') + '</button>' +
-        (abierto ? '<div class="od-mods">' + F.lista.map(function (x) {
-          var ab = st.abiertos[x.id], conSerie = x.filas.some(function (e) { return e.lote; });
-          var nombre = [x.p.variante, x.p.color].filter(Boolean).join(' · ') || x.p.titulo;
-          return '<button type="button" class="od-mod' + (ab ? ' abierto' : '') + '" data-prod="' + x.id + '"' + (conSerie ? ' aria-expanded="' + !!ab + '"' : '') + '>' +
-            '<span class="od-mod-nom">' + esc(nombre) + '</span><span class="num' + (x.n < 0 ? ' od-alerta' : '') + '">' + num(x.n) + '</span>' +
-            (conSerie ? ico('flecha') : '<span></span>') + '</button>' +
-            (ab && conSerie ? '<div class="od-chips">' + x.filas.map(function (e) {
-              var raro = Number(e.cantidad) !== 1;
-              return '<button type="button" class="od-chip num' + (raro ? ' od-alerta' : '') + '" data-serie="' + esc(e.lote) + '"' +
-                (raro ? ' title="Cantidad ' + num(e.cantidad) + '"' : '') + '>' + esc(L.serieCorta(L.serie(e.lote).serie)) + '</button>';
-            }).join('') + '</div>' : '');
+    orden.forEach(function (f) {
+      var F = fams[f];
+      F.ordenV.sort(function (a, b) { return cc(a) - cc(b) || a.localeCompare(b); });
+      F.ordenV.forEach(function (v) { F.vars[v].lista.sort(function (a, b) { return b.n - a.n || (a.p.color || a.p.titulo).localeCompare(b.p.color || b.p.titulo); }); });
+    });
+    return {fams: fams, orden: orden};
+  }
+
+  function casillasFamilia(es) {
+    if (!es.length) return '<p class="vacio">No hay nada aquí ' + (st.dia ? 'ese día' : 'hoy') + '.</p>';
+    var g = agrupar(es);
+    return '<div class="od-fams">' + g.orden.map(function (f) {
+      var F = g.fams[f];
+      return '<button type="button" class="od-ftile" data-fam="' + esc(f) + '">' + icoC(F.fig, 'venta', 'od-icc-lg') +
+        '<span class="od-ftile-n num' + (F.n < 0 ? ' od-alerta' : '') + '">' + num(F.n) + '</span><span class="od-ftile-nom">' + esc(f) + '</span></button>';
+    }).join('') + '</div>';
+  }
+
+  // Dentro de una familia: casillas por cilindrada (si hay más de una) y abajo los colores de la elegida;
+  // al picar un color, sus series en casillas con los últimos 5 y el semáforo de días.
+  function familia(a, por) {
+    var piezas = st.clase === 'otros' ? por.otros : por.vehiculos, g = agrupar(piezas), F = g.fams[st.fam];
+    if (!F) { st.fam = null; return almacen(); }
+    var v = F.vars[st.vari[F.nombre]] ? st.vari[F.nombre] : F.ordenV[0];
+    var h = '<div class="ficha-top"><button type="button" class="volver" id="od-volver">‹ ' + esc(L.nombreAlmacen(a.nombre)) + '</button></div>' +
+      '<div class="od-fcab">' + icoC(F.fig, 'venta', 'od-icc-xl') + '<h2>' + esc(F.nombre) + '</h2><span class="num">' + num(F.n) + '</span></div>';
+    if (F.ordenV.length > 1) h += '<div class="od-vars" id="od-vars">' + F.ordenV.map(function (k) {
+      var on = k === v;
+      return '<button type="button" class="od-vtile' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-var="' + esc(k) + '"><b>' + esc(k || 'Otros') + '</b>' +
+        '<span class="num">' + num(F.vars[k].n) + '</span></button>';
+    }).join('') + '</div>';
+    h += '<div id="od-lista">' + colores(F.vars[v]) + '</div>';
+    cont().innerHTML = h;
+    $('od-volver').onclick = function () { history.back(); };
+    if ($('od-vars')) $('od-vars').onclick = function (e) {
+      var b = e.target.closest('[data-var]'); if (!b) return;
+      st.vari[F.nombre] = b.dataset.var; st.abiertos = {}; familia(a, por);
+    };
+    $('od-lista').onclick = function (e) {
+      var s = e.target.closest('[data-serie]');
+      if (s) { var x = piezas.filter(function (y) { return y.lote === s.dataset.serie; })[0]; abrirSerie(s.dataset.serie, x ? L.producto(x) : null); return; }
+      var m = e.target.closest('[data-prod]'); if (!m) return;
+      st.abiertos[m.dataset.prod] = !st.abiertos[m.dataset.prod]; familia(a, por);
+    };
+  }
+  function muestra(color) {
+    var c = L.muestraColor(color);
+    var fondo = !c.length ? '' : c.length === 1 ? c[0] : 'linear-gradient(135deg,' + c[0] + ' 50%,' + c[1] + ' 50%)';
+    return '<span class="od-muestra' + (c.length ? '' : ' sin') + '"' + (fondo ? ' style="background:' + fondo + '"' : '') + '></span>';
+  }
+  // Desde cuándo está en esta sucursal (llegó de otro lugar); el "llego" de Odoo se reinicia con movimientos internos
+  function llegada(e) { return e.aqui_desde || e.llego || e.desde; }
+  function colores(V) {
+    var ref = st.dia ? st.dia + 'T23:00:00-06:00' : null;
+    return '<div class="renglones od-colores">' + V.lista.map(function (x) {
+      var ab = st.abiertos[x.id], conSerie = x.filas.some(function (e) { return e.lote; });
+      return '<button type="button" class="od-color' + (ab ? ' abierto' : '') + '" data-prod="' + x.id + '"' + (conSerie ? ' aria-expanded="' + !!ab + '"' : '') + '>' +
+        muestra(x.p.color) + '<span class="od-color-nom">' + esc(x.p.color || x.p.titulo) + '</span>' +
+        '<span class="num' + (x.n < 0 ? ' od-alerta' : '') + '">' + num(x.n) + '</span>' + (conSerie ? ico('flecha') : '<span></span>') + '</button>' +
+        (ab && conSerie ? '<div class="od-chips">' + x.filas.slice().sort(function (p, q) { return Date.parse(llegada(p)) - Date.parse(llegada(q)); }).map(function (e) {
+          var raro = Number(e.cantidad) !== 1, d = L.dias(llegada(e), ref);
+          return '<button type="button" class="od-chip num sem-' + L.semaforo(d) + (raro ? ' raro' : '') + '" data-serie="' + esc(e.lote) + '" title="' +
+            d + (d === 1 ? ' día' : ' días') + ' aquí' + (raro ? ' · cantidad ' + num(e.cantidad) : '') + '">' + esc(L.serieCorta(L.serie(e.lote).serie)) + '</button>';
         }).join('') + '</div>' : '');
     }).join('') + '</div>';
   }

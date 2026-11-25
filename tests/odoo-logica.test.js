@@ -99,3 +99,23 @@ test('serie corta: últimos 5 de un VIN', () => {
   assert.strictEqual(L.serieCorta('SILLA-E-AGS-01'), 'SILLA-E-AGS-01');
   assert.strictEqual(L.serieCorta(''), '');
 });
+
+test('figura por familia o por nombre', () => {
+  assert.strictEqual(L.figura('ATV', ''), 'atv');
+  assert.strictEqual(L.figura('Go Kart', ''), 'gokart');
+  assert.strictEqual(L.figura('Súper Patín', ''), 'patin');
+  assert.strictEqual(L.figura('', '[X] MOTOCARRO NUEVO 200 CC (ROJO)'), 'motocarro');
+  assert.strictEqual(L.figura('', 'MINI ATV O MINI CUATRIMOTO 50 CC'), 'atv');
+  assert.strictEqual(L.figura('Accesorios', 'TOLDO'), 'caja');
+});
+
+test('muestra de color', () => {
+  assert.deepStrictEqual(L.muestraColor('Azul Spider'), ['#2F6FD6']);
+  assert.deepStrictEqual(L.muestraColor('Blanco Camu Maple'), ['#F4F4F0', '#6E6B45']);
+  assert.deepStrictEqual(L.muestraColor('Extreme'), []);
+});
+
+test('semáforo de días', () => {
+  assert.strictEqual(L.dias('2026-10-23T18:00:00Z', '2026-11-25T18:00:00Z'), 33);
+  assert.deepStrictEqual([0, 30, 31, 90, 91, 365, 366].map(L.semaforo), ['verde', 'verde', 'amarillo', 'amarillo', 'naranja', 'naranja', 'rojo']);
+});

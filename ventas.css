@@ -272,24 +272,60 @@ mark{background:var(--acento-bg);color:var(--acento);border-radius:4px;padding:0
 .od-grupo-tit{display:flex;justify-content:space-between;gap:12px;font-size:13px;font-weight:600;color:var(--text2);padding:18px 6px 8px}
 .od-fija{cursor:default}
 @media(hover:hover){.od-fija:hover{background:none}}
-/* Familias (ATV, Cross…) > modelos > casillas de serie */
-.renglon.od-fam{grid-template-columns:minmax(0,1fr) auto 18px;align-items:center;gap:12px;min-height:58px;padding:12px 18px}
-.od-fam-nom,.od-fam-n{font-size:17px;font-weight:600}
-.od-fam>.od-ic,.od-mod>.od-ic{width:18px;height:18px;color:var(--text3);transition:transform .22s cubic-bezier(.2,.8,.2,1)}
-.od-fam.abierto>.od-ic,.od-mod.abierto>.od-ic{transform:rotate(90deg)}
-.od-mods{background:var(--surface2);padding:2px 0}
-.od-mod{display:grid;grid-template-columns:minmax(0,1fr) auto 18px;align-items:center;gap:12px;width:100%;min-height:50px;border:0;background:none;
-  padding:10px 18px 10px 30px;text-align:left;font-size:15px;color:var(--text)}
-.od-mod+.od-mod,.od-chips+.od-mod{border-top:1px solid var(--border)}
-.od-mod-nom{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.od-mod .num{font-weight:600}
-@media(hover:hover){.od-mod:hover{background:color-mix(in srgb,var(--text) 4%,transparent)}}
-.od-chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;padding:2px 18px 14px 30px}
-.od-chip{min-height:48px;border:0;border-radius:12px;background:var(--surface);color:var(--text);font-size:17px;font-weight:600;letter-spacing:.03em;
-  transition:transform .16s cubic-bezier(.2,.8,.2,1),background-color .12s}
+/* Semáforo de días: verde hasta 30, amarillo hasta 3 meses, naranja hasta un año, rojo más */
+:root{--sem-verde:#2C8A5E;--sem-amarillo:#C99A00;--sem-naranja:#DD6B1A;--sem-rojo:#C4281C}
+@media(prefers-color-scheme:dark){:root{--sem-verde:#3CB87A;--sem-amarillo:#E8C14A;--sem-naranja:#F0974E;--sem-rojo:#F07E72}}
+.sem-verde{--s:var(--sem-verde)}.sem-amarillo{--s:var(--sem-amarillo)}.sem-naranja{--s:var(--sem-naranja)}.sem-rojo{--s:var(--sem-rojo)}
+.od-sem{display:inline-block;width:9px;height:9px;border-radius:999px;background:var(--s);margin:0 5px 0 2px;vertical-align:0}
+
+/* Sucursal: casillas por familia */
+.od-fams{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.od-ftile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:0;background:var(--surface);border-radius:18px;padding:16px;
+  text-align:left;min-height:138px;transition:transform .16s cubic-bezier(.2,.8,.2,1),background-color .12s}
+.od-ftile .od-icc{margin-bottom:auto}
+.od-ftile:active{transform:scale(.96)}
+@media(hover:hover){.od-ftile:hover{background:var(--surface2)}}
+.od-ftile-n{font-size:28px;font-weight:700;line-height:1.1;margin-top:14px;letter-spacing:-.01em}
+.od-ftile-nom{font-size:15px;font-weight:500;color:var(--text2)}
+
+/* Familia: cabecera, cilindradas y colores */
+.od-fcab{display:flex;align-items:center;gap:14px;margin:2px 0 18px}
+.od-fcab h2{font-size:26px;line-height:1.2}
+.od-fcab>.num{font-size:26px;font-weight:700;color:var(--text3)}
+.od-vars{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.od-vtile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:104px;border:0;background:var(--surface);border-radius:14px;padding:12px 16px;
+  text-align:left;color:var(--text);transition:transform .16s cubic-bezier(.2,.8,.2,1),background-color .15s,box-shadow .15s}
+.od-vtile b{font-size:17px;font-weight:600}
+.od-vtile span{font-size:14px;color:var(--text2)}
+.od-vtile:active{transform:scale(.96)}
+.od-vtile.on{background:var(--acento-bg);box-shadow:inset 0 0 0 1.5px var(--acento);color:var(--acento)}
+.od-vtile.on span{color:var(--acento)}
+@media(hover:hover){.od-vtile:not(.on):hover{background:var(--surface2)}}
+.od-colores{max-width:680px}
+.od-color{display:grid;grid-template-columns:28px minmax(0,1fr) auto 18px;align-items:center;gap:14px;width:100%;min-height:56px;border:0;border-top:1px solid var(--border);
+  background:none;padding:10px 18px;text-align:left;font-size:16px;color:var(--text);transition:background-color .12s}
+.od-color:first-child{border-top:0}
+.od-color.abierto{background:var(--surface2)}
+.od-color .num{font-size:17px;font-weight:600}
+.od-color>.od-ic{width:18px;height:18px;color:var(--text3);transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+.od-color.abierto>.od-ic{transform:rotate(90deg)}
+@media(hover:hover){.od-color:hover{background:var(--surface2)}}
+.od-color-nom{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.od-muestra{width:28px;height:28px;border-radius:999px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.14)}
+.od-muestra.sin{background:var(--surface2)}
+.od-chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;padding:4px 18px 16px 60px;background:var(--surface2)}
+.od-chip{display:flex;align-items:center;justify-content:center;gap:7px;min-height:48px;border:0;border-radius:12px;color:var(--text);font-size:17px;font-weight:600;letter-spacing:.03em;
+  background:color-mix(in srgb,var(--s,var(--text3)) 13%,var(--surface));transition:transform .16s cubic-bezier(.2,.8,.2,1)}
+.od-chip::before{content:"";width:9px;height:9px;border-radius:999px;background:var(--s,var(--text3));flex:none}
+.od-chip.raro{box-shadow:inset 0 0 0 2px var(--alerta)}
 .od-chip:active{transform:scale(.95)}
-@media(hover:hover){.od-chip:hover{background:var(--acento-bg);color:var(--acento)}}
-.od-chip.od-alerta{background:var(--alerta-bg);color:var(--alerta)}
+@media(hover:hover){.od-chip:hover{background:color-mix(in srgb,var(--s,var(--text3)) 22%,var(--surface))}}
+#od-lista>.renglones:not(.od-colores){max-width:760px}
+@media(max-width:640px){
+  .od-fams{grid-template-columns:1fr 1fr;gap:10px}
+  .od-ftile{min-height:128px;padding:14px}
+  .od-chips{padding-left:18px}
+}
 
 /* Por revisar */
 .od-agrupo{gap:14px;padding-left:12px;min-height:64px}

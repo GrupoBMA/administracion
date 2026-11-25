@@ -281,12 +281,25 @@ mark{background:var(--acento-bg);color:var(--acento);border-radius:4px;padding:0
 /* Sucursal: casillas por familia */
 .od-fams{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .od-ftile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:0;background:var(--surface);border-radius:18px;padding:16px;
-  text-align:left;min-height:138px;transition:transform .16s cubic-bezier(.2,.8,.2,1),background-color .12s}
+  text-align:left;transition:transform .16s cubic-bezier(.2,.8,.2,1),background-color .12s}
 .od-ftile .od-icc{margin-bottom:auto}
 .od-ftile:active{transform:scale(.96)}
 @media(hover:hover){.od-ftile:hover{background:var(--surface2)}}
-.od-ftile-n{font-size:28px;font-weight:700;line-height:1.1;margin-top:14px;letter-spacing:-.01em}
+.od-ftile-n{font-size:28px;font-weight:700;line-height:1.1;letter-spacing:-.01em}
 .od-ftile-nom{font-size:15px;font-weight:500;color:var(--text2)}
+
+/* Fotos de portada (sunldemexico.com), en la proporción de la original */
+.od-foto{display:block;flex:none;overflow:hidden;background:#C8C8C8;aspect-ratio:488/308}
+.od-foto img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 45%}
+.od-ftile{padding:10px 10px 14px}
+.od-ftile-img{display:block;width:100%;margin-bottom:auto}
+.od-foto-tile{width:100%;border-radius:12px}
+.od-ftile-img .od-icc{width:100%;height:auto;aspect-ratio:488/308;border-radius:12px}
+.od-ftile-img .od-icc .od-ic{width:40px;height:40px;stroke-width:1.6}
+.od-ftile-n,.od-ftile-nom{padding:0 6px}
+.od-ftile-n{margin-top:12px}
+.od-foto-cab{width:120px;border-radius:14px}
+.od-foto-ficha{width:min(300px,86%);border-radius:18px;margin-bottom:8px}
 
 /* Familia: cabecera, cilindradas y colores */
 .od-fcab{display:flex;align-items:center;gap:14px;margin:2px 0 18px}
@@ -323,7 +336,7 @@ mark{background:var(--acento-bg);color:var(--acento);border-radius:4px;padding:0
 #od-lista>.renglones:not(.od-colores){max-width:760px}
 @media(max-width:640px){
   .od-fams{grid-template-columns:1fr 1fr;gap:10px}
-  .od-ftile{min-height:128px;padding:14px}
+  .od-foto-cab{width:96px}
   .od-chips{padding-left:18px}
 }
 

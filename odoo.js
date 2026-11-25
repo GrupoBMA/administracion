@@ -49,6 +49,17 @@
   };
   function ico(k) { return '<svg class="od-ic" viewBox="0 0 24 24" aria-hidden="true">' + (IC[k] || IC.lugar) + '</svg>'; }
   // Ícono en su casilla de color (tono: entra, venta, neutro o alerta)
+  // Fotos de las portadas de sunldemexico.com (img/odoo). Las familias sin foto se quedan con su dibujo.
+  var FOTOS = {atv: 1, cross: 1, gokart: 1, motocarro: 1, mototaxi: 1, patin: 1, utv: 1};
+  function foto(fig, pista) {
+    if (fig === 'cross' && /^50\b|\b50\s*cc\b/i.test(pista || '')) return 'img/odoo/minimoto.jpg';
+    return FOTOS[fig] ? 'img/odoo/' + fig + '.jpg' : '';
+  }
+  // Foto (si hay) o dibujo en su casilla de color
+  function imagen(fig, pista, clase, claseIco) {
+    var f = foto(fig, pista);
+    return f ? '<span class="od-foto ' + clase + '"><img src="' + f + '" alt="" decoding="async"></span>' : icoC(fig, 'venta', claseIco);
+  }
   function icoC(k, tono, extra) { return '<span class="od-icc tono-' + (tono || 'neutro') + (extra ? ' ' + extra : '') + '">' + ico(k) + '</span>'; }
   var ICO_CLASE = {vehiculos: 'moto', pasto: 'pasto', otros: 'caja'};
   var ICO_ALERTA = {negativo: 'negativo', serie: 'copia', otra_persona: 'persona', devolucion: 'regreso', ajuste: 'ajuste',
@@ -245,7 +256,7 @@
     var s = L.serie(lote);
     var nombre = panelProd ? panelProd.titulo + (panelProd.color ? ' · ' + panelProd.color : '') : (r ? nombreProducto(r) : '');
     var crudo = r ? r.producto || (r.movimientos && r.movimientos.length ? r.movimientos[0].producto : '') || '' : '';
-    return '<div class="od-s-cab">' + icoC(L.figura(panelProd ? panelProd.familia : '', crudo || nombre), 'venta', 'od-icc-xl') +
+    return '<div class="od-s-cab">' + imagen(L.figura(panelProd ? panelProd.familia : '', crudo || nombre), panelProd ? panelProd.variante : crudo, 'od-foto-ficha', 'od-icc-xl') +
       '<h2 id="od-p-tit" class="num">' + esc(L.serieCorta(s.serie)) + '</h2>' +
       (nombre ? '<p class="od-s-prod">' + esc(nombre) + '</p>' : '') + '</div>' + (r ? info(lote, r) : '');
   }
@@ -407,7 +418,7 @@
     var g = agrupar(es);
     return '<div class="od-fams">' + g.orden.map(function (f) {
       var F = g.fams[f];
-      return '<button type="button" class="od-ftile" data-fam="' + esc(f) + '">' + icoC(F.fig, 'venta', 'od-icc-lg') +
+      return '<button type="button" class="od-ftile" data-fam="' + esc(f) + '"><span class="od-ftile-img">' + imagen(F.fig, '', 'od-foto-tile', 'od-icc-lg') + '</span>' +
         '<span class="od-ftile-n num' + (F.n < 0 ? ' od-alerta' : '') + '">' + num(F.n) + '</span><span class="od-ftile-nom">' + esc(f) + '</span></button>';
     }).join('') + '</div>';
   }
@@ -419,7 +430,7 @@
     if (!F) { st.fam = null; return almacen(); }
     var v = F.vars[st.vari[F.nombre]] ? st.vari[F.nombre] : F.ordenV[0];
     var h = '<div class="ficha-top"><button type="button" class="volver" id="od-volver">‹ ' + esc(L.nombreAlmacen(a.nombre)) + '</button></div>' +
-      '<div class="od-fcab">' + icoC(F.fig, 'venta', 'od-icc-xl') + '<h2>' + esc(F.nombre) + '</h2><span class="num">' + num(F.n) + '</span></div>';
+      '<div class="od-fcab">' + imagen(F.fig, v, 'od-foto-cab', 'od-icc-xl') + '<h2>' + esc(F.nombre) + '</h2><span class="num">' + num(F.n) + '</span></div>';
     if (F.ordenV.length > 1) h += '<div class="od-vars" id="od-vars">' + F.ordenV.map(function (k) {
       var on = k === v;
       return '<button type="button" class="od-vtile' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-var="' + esc(k) + '"><b>' + esc(k || 'Otros') + '</b>' +
@@ -449,12 +460,15 @@
   function colores(V) {
     var ref = st.dia ? st.dia + 'T23:00:00-06:00' : null;
     // Si dos modelos tienen el mismo color (p. ej. súper patín Mimi y Tom, ambos rojos), se agrega el modelo
-    var veces = {};
-    V.lista.forEach(function (x) { var k = x.p.color || x.p.titulo; veces[k] = (veces[k] || 0) + 1; });
+    // y si aun así se repite (el nombre de Odoo no los distingue), la clave del modelo
+    var cuenta = function (f) { var v = {}; V.lista.forEach(function (x) { var k = f(x); v[k] = (v[k] || 0) + 1; }); return v; };
+    var base = function (x) { return x.p.color || x.p.titulo; };
+    var conModelo = function (x) { return base(x) + ' · ' + (L.modelo(x.filas[0].nombre) || x.p.codigo); };
+    var veces = cuenta(base), veces2 = cuenta(conModelo);
     return '<div class="renglones od-colores">' + V.lista.map(function (x) {
       var ab = st.abiertos[x.id], conSerie = x.filas.some(function (e) { return e.lote; });
-      var nom = x.p.color || x.p.titulo;
-      if (veces[nom] > 1) nom += ' · ' + (L.modelo(x.filas[0].nombre) || x.p.codigo);
+      var nom = base(x);
+      if (veces[nom] > 1) nom = veces2[conModelo(x)] > 1 ? nom + ' · ' + x.p.codigo : conModelo(x);
       return '<button type="button" class="od-color' + (ab ? ' abierto' : '') + '" data-prod="' + x.id + '"' + (conSerie ? ' aria-expanded="' + !!ab + '"' : '') + '>' +
         muestra(x.p.color) + '<span class="od-color-nom">' + esc(nom) + '</span>' +
         '<span class="num' + (x.n < 0 ? ' od-alerta' : '') + '">' + num(x.n) + '</span>' + (conSerie ? ico('flecha') : '<span></span>') + '</button>' +

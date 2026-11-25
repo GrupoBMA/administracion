@@ -469,6 +469,8 @@
       var ab = st.abiertos[x.id], conSerie = x.filas.some(function (e) { return e.lote; });
       var nom = base(x);
       if (veces[nom] > 1) nom = veces2[conModelo(x)] > 1 ? nom + ' · ' + x.p.codigo : conModelo(x);
+      // En "Otros" (toldos, plataformas…) el color solo no dice qué es: va el nombre corto de Odoo y el color
+      if (st.clase === 'otros') nom = L.nombreCorto(x.filas[0].nombre) + (x.p.color ? ' · ' + x.p.color : '');
       return '<button type="button" class="od-color' + (ab ? ' abierto' : '') + '" data-prod="' + x.id + '"' + (conSerie ? ' aria-expanded="' + !!ab + '"' : '') + '>' +
         muestra(x.p.color) + '<span class="od-color-nom">' + esc(nom) + '</span>' +
         '<span class="num' + (x.n < 0 ? ' od-alerta' : '') + '">' + num(x.n) + '</span>' + (conSerie ? ico('flecha') : '<span></span>') + '</button>' +

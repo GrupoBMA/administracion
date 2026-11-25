@@ -44,6 +44,11 @@
     var tras = t.lastIndexOf(',') >= 0 ? t.slice(t.lastIndexOf(',') + 1) : '';
     return capital(tras.split(/\s+/).filter(function (w) { return w && !/\d/.test(w); }).join(' '));
   }
+  // Nombre corto: sin la clave, hasta la primera coma y sin el color
+  // ("TOLDO PARA MOTOCARRO 150 CC, CON CACHUCHA … (BLANCO)" -> "Toldo Para Motocarro 150 cc")
+  function nombreCorto(nombre) {
+    return capital(String(nombre || '').replace(/^\[[^\]]*\]\s*/, '').split(',')[0].replace(/\([^()]*\)\s*$/, '').trim());
+  }
   function sinAcentos(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
 
   // Qué dibujo le toca a un producto: por su familia o, si no hay categoría, por palabras del nombre
@@ -54,8 +59,9 @@
     ['cross', /cross|motocicleta|\bmoto\b/]
   ];
   function figura(familia, nombre) {
-    var t = sinAcentos(familia) + ' | ' + sinAcentos(nombre);
-    var f = FIGURAS.filter(function (x) { return x[1].test(sinAcentos(familia)); })[0] || FIGURAS.filter(function (x) { return x[1].test(t); })[0];
+    // Con familia manda la familia (un toldo "para motocarro" es accesorio, no motocarro); el nombre solo si no hay familia
+    var texto = familia ? sinAcentos(familia) : sinAcentos(nombre);
+    var f = FIGURAS.filter(function (x) { return x[1].test(texto); })[0];
     return f ? f[0] : 'caja';
   }
 
@@ -183,7 +189,7 @@
     sin_movimientos: 'Sin movimientos en Odoo'
   };
 
-  return {nombreAlmacen: nombreAlmacen, producto: producto, anchoPasto: anchoPasto, rollos: rollos, serie: serie, serieCorta: serieCorta, modelo: modelo, figura: figura, muestraColor: muestraColor, dias: dias, semaforo: semaforo,
+  return {nombreAlmacen: nombreAlmacen, producto: producto, anchoPasto: anchoPasto, rollos: rollos, serie: serie, serieCorta: serieCorta, modelo: modelo, nombreCorto: nombreCorto, figura: figura, muestraColor: muestraColor, dias: dias, semaforo: semaforo,
           tipoMov: tipoMov, fechaHora: fechaHora, hace: hace, lunes: lunes, semana: semana, cantidad: cantidad, clase: clase,
           ALERTAS: ALERTAS, capital: capital};
 });

@@ -125,3 +125,12 @@ test('modelo dentro del nombre', () => {
   assert.strictEqual(L.modelo('[SP1500-TR-NE] SÚPER PATÍN … DE MEXICO, 60V12AH TRIBILIN (NEGRO)'), 'Tribilin');
   assert.strictEqual(L.modelo('ATV 110 CC (ROJO)'), '');
 });
+
+test('nombre corto para Otros', () => {
+  assert.strictEqual(L.nombreCorto('TOLDO PARA MOTOCARRO 150 CC, CON CACHUCHA HECHO DE PVC (BLANCO)'), 'Toldo Para Motocarro 150 cc');
+  assert.strictEqual(L.nombreCorto('[X-1] PLATAFORMA (NEGRO)'), 'Plataforma');
+});
+
+test('figura: con familia manda la familia', () => {
+  assert.strictEqual(L.figura('Accesorios', 'TOLDO PARA MOTOCARRO 150 CC (BLANCO)'), 'caja');
+});

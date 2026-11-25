@@ -448,10 +448,15 @@
   function llegada(e) { return e.aqui_desde || e.llego || e.desde; }
   function colores(V) {
     var ref = st.dia ? st.dia + 'T23:00:00-06:00' : null;
+    // Si dos modelos tienen el mismo color (p. ej. súper patín Mimi y Tom, ambos rojos), se agrega el modelo
+    var veces = {};
+    V.lista.forEach(function (x) { var k = x.p.color || x.p.titulo; veces[k] = (veces[k] || 0) + 1; });
     return '<div class="renglones od-colores">' + V.lista.map(function (x) {
       var ab = st.abiertos[x.id], conSerie = x.filas.some(function (e) { return e.lote; });
+      var nom = x.p.color || x.p.titulo;
+      if (veces[nom] > 1) nom += ' · ' + (L.modelo(x.filas[0].nombre) || x.p.codigo);
       return '<button type="button" class="od-color' + (ab ? ' abierto' : '') + '" data-prod="' + x.id + '"' + (conSerie ? ' aria-expanded="' + !!ab + '"' : '') + '>' +
-        muestra(x.p.color) + '<span class="od-color-nom">' + esc(x.p.color || x.p.titulo) + '</span>' +
+        muestra(x.p.color) + '<span class="od-color-nom">' + esc(nom) + '</span>' +
         '<span class="num' + (x.n < 0 ? ' od-alerta' : '') + '">' + num(x.n) + '</span>' + (conSerie ? ico('flecha') : '<span></span>') + '</button>' +
         (ab && conSerie ? '<div class="od-chips">' + x.filas.slice().sort(function (p, q) { return Date.parse(llegada(p)) - Date.parse(llegada(q)); }).map(function (e) {
           var raro = Number(e.cantidad) !== 1, d = L.dias(llegada(e), ref);

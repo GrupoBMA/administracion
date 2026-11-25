@@ -37,6 +37,13 @@
     var variante = partes.length > 2 ? siglas(capital(partes.slice(2).join(' '))) : '';
     return {titulo: tipo, color: color, empresa: capital(empresa), codigo: p.codigo || '', familia: familia, variante: variante};
   }
+  // Nombre del modelo dentro del nombre de Odoo: lo que va después de la última coma y antes del color,
+  // sin las medidas ("…DE MEXICO, 60V12AH MIMI (ROJO)" -> "Mimi")
+  function modelo(nombre) {
+    var t = String(nombre || '').replace(/\([^()]*\)\s*$/, '');
+    var tras = t.lastIndexOf(',') >= 0 ? t.slice(t.lastIndexOf(',') + 1) : '';
+    return capital(tras.split(/\s+/).filter(function (w) { return w && !/\d/.test(w); }).join(' '));
+  }
   function sinAcentos(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
 
   // Qué dibujo le toca a un producto: por su familia o, si no hay categoría, por palabras del nombre
@@ -176,7 +183,7 @@
     sin_movimientos: 'Sin movimientos en Odoo'
   };
 
-  return {nombreAlmacen: nombreAlmacen, producto: producto, anchoPasto: anchoPasto, rollos: rollos, serie: serie, serieCorta: serieCorta, figura: figura, muestraColor: muestraColor, dias: dias, semaforo: semaforo,
+  return {nombreAlmacen: nombreAlmacen, producto: producto, anchoPasto: anchoPasto, rollos: rollos, serie: serie, serieCorta: serieCorta, modelo: modelo, figura: figura, muestraColor: muestraColor, dias: dias, semaforo: semaforo,
           tipoMov: tipoMov, fechaHora: fechaHora, hace: hace, lunes: lunes, semana: semana, cantidad: cantidad, clase: clase,
           ALERTAS: ALERTAS, capital: capital};
 });

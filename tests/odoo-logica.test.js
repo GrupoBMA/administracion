@@ -119,3 +119,9 @@ test('semáforo de días', () => {
   assert.strictEqual(L.dias('2026-10-23T18:00:00Z', '2026-11-25T18:00:00Z'), 33);
   assert.deepStrictEqual([0, 30, 31, 90, 91, 365, 366].map(L.semaforo), ['verde', 'verde', 'amarillo', 'amarillo', 'naranja', 'naranja', 'rojo']);
 });
+
+test('modelo dentro del nombre', () => {
+  assert.strictEqual(L.modelo('[SP1500-MI-RO] SÚPER PATÍN ELÉCTRICO 1500 W NUEVO IMPORTADO MARCA SUNL DE MEXICO, 60V12AH MIMI (ROJO)'), 'Mimi');
+  assert.strictEqual(L.modelo('[SP1500-TR-NE] SÚPER PATÍN … DE MEXICO, 60V12AH TRIBILIN (NEGRO)'), 'Tribilin');
+  assert.strictEqual(L.modelo('ATV 110 CC (ROJO)'), '');
+});

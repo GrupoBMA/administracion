@@ -37,32 +37,40 @@
   };
   function ico(k) { return '<svg class="od-ic" viewBox="0 0 24 24" aria-hidden="true">' + (IC[k] || IC.lugar) + '</svg>'; }
   // Siluetas de lado (viewBox 0 0 64 40), todas mirando a la derecha y sobre el mismo piso (y = 37).
-  // Estilo propio: rellenas, esquinas redondeadas, llanta = aro con centro hueco y maza; uno o dos huecos como máximo.
+  // Estilo propio: rellenas, esquinas redondeadas, llanta gruesa con aro blanco delgado y maza grande; pocos huecos.
   // Relleno = color del texto; ".h" = hueco del color del fondo (--hueco). Inspiradas en colecciones libres
-  // (Material Design, Iconoven, UIX) y en dos ejemplos que mandó el usuario (motocarro y ATV).
+  // (Material Design, Iconoven, UIX) y en los ejemplos que mandó el usuario (motocarro, ATV, UTV, patín, mototaxi y go kart).
   var RUEDA = function (x, r) {
     var y = 37 - r;
-    return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '"/><circle class="h" cx="' + x + '" cy="' + y + '" r="' + (r * 0.52) + '"/>' +
-      '<circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.24) + '"/>';
+    return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '"/><circle class="h" cx="' + x + '" cy="' + y + '" r="' + (r * 0.56) + '"/>' +
+      '<circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.38) + '"/>';
   };
-  var TRAZO = function (d, g) { return '<path d="' + d + '" fill="none" stroke="currentColor" stroke-width="' + (g || 3) + '" stroke-linecap="round" stroke-linejoin="round"/>'; };
+  var TRAZO = function (d, g, color) {
+    return '<path d="' + d + '" fill="none" stroke="' + (color || 'currentColor') + '" stroke-width="' + (g || 3) + '" stroke-linecap="round" stroke-linejoin="round"/>';
+  };
+  // Línea del color del fondo, para marcar un borde dentro de una pieza rellena
+  var LINEA = function (d, g) { return TRAZO(d, g || 1.4, 'var(--hueco)'); };
   var SIL = {
     motocarro:
-      '<rect x="3" y="18" width="34" height="8" rx="1.5"/><rect x="7" y="25" width="34" height="3" rx="1"/>' +
-      '<path d="M38 28V9a3 3 0 0 1 3-3h7c3.5 0 5.6 2.4 6.4 6L57 23v5z"/><rect class="h" x="41" y="9" width="7" height="12" rx="1.5"/>' +
-      '<rect x="42.5" y="17" width="5" height="5" rx="1"/>' +
-      RUEDA(14, 6) + RUEDA(52, 6),
+      // cabina alta con la puerta abierta de arriba abajo y asiento; plataforma baja; llantas chicas
+      '<path d="M41 30V7.5A2.5 2.5 0 0 1 43.5 5h7c3.8 0 6.2 3 6.8 7.4l.4 3.6c1.6.5 2.3 1.7 2.3 3.3v2.4l-1.2 1V30z"/>' +
+      '<rect class="h" x="43.6" y="7.6" width="7.2" height="19.4" rx="1.6"/><rect x="45" y="20" width="5.8" height="5" rx="1"/>' +
+      '<circle class="h" cx="58.2" cy="19.8" r="1.1"/>' +
+      '<rect x="3" y="18" width="38" height="9" rx="1"/><rect x="7" y="28" width="40" height="2" rx="1"/>' +
+      RUEDA(15, 5.5) + RUEDA(54, 5.5),
     atv:
-      '<path d="M3 24c0-6 5-10 11-10s10.5 3.5 11 8h13c.5-4.5 5-8 11-8s11 4 11 10h-3.5c-.3-4-3.5-6.5-7.5-6.5s-7.2 2.6-7.5 6.5H21.5c-.3-3.9-3.5-6.5-7.5-6.5S6.8 20 6.5 24z"/>' +
-      '<path d="M22 22l3-7h15l2 7z"/><rect x="23" y="10" width="15" height="4.5" rx="2.25"/>' +
-      '<rect x="3" y="11" width="11" height="2.6" rx="1.3"/><rect x="49" y="11" width="11" height="2.6" rx="1.3"/>' +
-      TRAZO('M42 15l3-8M42 7h6') +
-      RUEDA(14, 8.5) + RUEDA(50, 8.5),
+      // parrillas planas a los lados, joroba del asiento al centro, salpicaderas que bajan y abrazan llantas grandes
+      '<path d="M2.4 23V16.6c0-1 .8-1.8 1.8-1.8H20l2.6-4.6c.7-1.3 2-2 3.4-2h7.4c1.4 0 2.6.7 3.2 1.9l1.6 3.1h21.4c1 0 1.8.8 1.8 1.8V23H61' +
+      'A10.2 10.2 0 0 0 41 23.6l-2 3.4H25l-2-3.4A10.2 10.2 0 0 0 3 23z"/>' +
+      LINEA('M6 21.2c.8-2.4 2.6-3.6 5.2-3.6h9l3.6 6h16.4l3.6-6h9c2.6 0 4.4 1.2 5.2 3.6', 1.5) +
+      TRAZO('M39.5 13l3-6.5c.4-.9 1.2-1.4 2.1-1.4h3.4', 2.8) +
+      RUEDA(13, 9.3) + RUEDA(51, 9.3),
     mototaxi:
-      '<path d="M5 30V11a7 7 0 0 1 7-7h29c6 0 10 3.6 12 9l4.5 11v6z"/>' +
-      '<path class="h" d="M9 9h16v15H9z"/><path class="h" d="M29 9h11c3.5 0 6 2 7.3 5.5L50 22H29z"/>' +
-      '<rect x="11" y="18" width="12" height="4" rx="1.5"/>' +
-      RUEDA(15, 5.5) + RUEDA(52, 5.5),
+      // cuerpo redondo de una pieza: abertura de pasajeros con respaldo y ventana delantera curva; llantas chicas
+      '<path d="M4 31V8.2A4.2 4.2 0 0 1 8.2 4H34c11.6 0 19.6 7.6 22.6 17.6l1.2 4.2c1.2.6 1.8 1.6 1.8 2.8V31z"/>' +
+      '<path class="h" d="M8.5 8.5H24v18h-6.2c-.4-3.2-2.4-5.4-5.6-5.4H8.5z"/>' +
+      '<path class="h" d="M28 8.5h6c8.4 0 14.4 5.4 17 13.2H28z"/>' +
+      RUEDA(14, 5.6) + RUEDA(51, 5.6),
     cross:
       '<path d="M17 23l8-6h13l7-5 4 1-3 7-9 5H26z"/><rect x="21" y="13" width="17" height="4" rx="2"/>' +
       '<rect x="26" y="22" width="10" height="6" rx="1.5"/>' +
@@ -70,19 +78,24 @@
       '<path d="M49 18l9-2-2 3.5z"/>' +
       RUEDA(12, 7) + RUEDA(52, 7),
     utv:
-      '<path d="M3 28v-3.5l3.5-3.5H40l6-3h8l7 6v4z"/>' +
-      TRAZO('M14 21l5-13h19l8 10M27 8v13', 2.4) +
-      '<path d="M19 21v-5a2 2 0 0 1 2-2h4v7z"/>' +
-      RUEDA(14, 8.5) + RUEDA(51, 8.5),
+      // techo largo, poste trasero, parabrisas abierto inclinado, cofre que baja; puerta recortada; llantas grandes bajo arcos
+      '<rect x="5" y="6" width="28" height="3.4" rx="1.7"/><rect x="4" y="6" width="4" height="12" rx="1.2"/><rect x="18" y="8" width="3" height="9"/>' +
+      TRAZO('M31.5 7.5l9.5 9.2', 3.2) +
+      '<path d="M4 26v-9.6h37.5L54 15c3.4 0 5.8 1.9 6.4 4.8L61.5 26h-2.3A8.6 8.6 0 0 0 42 26H22A8.6 8.6 0 0 0 4.8 26z"/>' +
+      '<path class="h" d="M21.5 16.4h10v2.8c0 2.6-2 4.4-5 4.4s-5-1.8-5-4.4z"/>' +
+      RUEDA(13.4, 8) + RUEDA(50.6, 8),
     gokart:
-      '<rect x="6" y="26" width="50" height="3.4" rx="1.7"/><path d="M44 26l10-3.5h4l2 3.5z"/>' +
-      '<path d="M18 26v-9a3 3 0 0 1 3-3h3.5l1.5 12z"/><rect x="7" y="19" width="8" height="7" rx="1.5"/>' +
-      TRAZO('M33 26l6-9') + '<ellipse cx="40" cy="15.5" rx="2" ry="4.2" transform="rotate(30 40 15.5)"/>' +
-      RUEDA(12, 7) + RUEDA(52, 5.5),
+      // chasis bajo con nariz, respaldo alto, volante y pontón lateral
+      '<path d="M4 31.5v-3.5h45l8.5-4h2.6l.9 4.4v3.1z"/>' +
+      '<path d="M16 28V12.6a3.2 3.2 0 0 1 6.4 0V22H28v6z"/><rect x="25" y="21.5" width="15" height="5" rx="2.2"/>' +
+      TRAZO('M35 22l4-7.5', 2.8) + TRAZO('M36.5 13.6l6 1.6', 3) +
+      RUEDA(11, 6.8) + RUEDA(52, 6.8),
     patin:
-      '<path d="M10 28c1.5-8 7.5-12 16-12h8l6 12z"/><rect x="16" y="11" width="15" height="4.5" rx="2.25"/>' +
-      TRAZO('M48 30L44 8M41 8.5c3-1.2 6-1.2 9 0') +
-      RUEDA(13, 7.5) + RUEDA(48, 7.5),
+      // plataforma baja, manubrio alto inclinado, salpicadera atrás (sin el rayo)
+      TRAZO('M11 30.5H35l9-10', 4) + TRAZO('M52 31L45.5 6', 3.4) + TRAZO('M38.5 5.5h8.3l1.2 2.4', 3) +
+      TRAZO('M4.5 27.5c1.4-3.6 4.4-5.6 8-5.6 2.4 0 4.4.8 5.8 2.2', 2.6) +
+      '<rect x="46.5" y="13" width="3.4" height="6" rx="1.5" transform="rotate(-14 48 16)"/>' +
+      RUEDA(12, 6.5) + RUEDA(52, 6.5),
     bici:
       '<g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">' +
       '<circle cx="13" cy="28" r="8"/><circle cx="51" cy="28" r="8"/><path d="M13 28l9-14h18l11 14M22 14l9 14h9M40 14l-2-6h-4M19 9h7"/></g>' +

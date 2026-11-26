@@ -27,7 +27,7 @@
 // Herramienta local: sube .local/importacion/lotes.json (lo genera importar/cargar.py) con la sesión del admin.
 // Supabase solo lo acepta de una cuenta admin y mientras no haya nada capturado a mano.
 var sb = window.supabase.createClient('https://jlfendrdwptwmttrahre.supabase.co',
-  'sb_publishable_RNnR7jV42dGEGLFWdRVfvQ_cP1xSwuO', {auth: {persistSession: true, autoRefreshToken: true}});
+  'sb_publishable_RNnR7jV42dGEGLFWdRVfvQ_cP1xSwuO', {auth: {persistSession: true, autoRefreshToken: true, storageKey: 'administracion-sesion'}});
 var ORDEN = ['personas', 'ventas', 'movimientos', 'apartados', 'dudas_importacion'];
 var LOTE = 400;
 var $ = function(id){ return document.getElementById(id); };

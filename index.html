@@ -1097,7 +1097,7 @@ function renderRevisar(){
 var SUPABASE_URL = 'https://jlfendrdwptwmttrahre.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_RNnR7jV42dGEGLFWdRVfvQ_cP1xSwuO';
 var DOMINIO = '@administracion.bma';      // "usuario" -> usuario@administracion.bma
-var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth: {persistSession: true, autoRefreshToken: true}});
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth: {persistSession: true, autoRefreshToken: true, storageKey: 'administracion-sesion'}});
 var SESION = null;                         // {nombre, rol}
 
 function errorEntrar(msg){

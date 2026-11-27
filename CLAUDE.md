@@ -147,3 +147,7 @@ La información llega en Excels que el equipo deja en Google Drive. Google Drive
 - `G:\Mi unidad\SUNL\` — `Gastos_Fijos.xlsx`, `Organigrama.xlsx`.
 
 La letra de unidad puede cambiar en la computadora principal.
+
+## Inicio de sesión: ojo
+
+**Ojo para ver la contraseña** (27-nov-2026, pedido del usuario, igual en las 4 apps): en el inicio de sesión, un botón con un ojo a la derecha del campo muestra u oculta lo escrito; al dar Entrar se vuelve a tapar. Es un bloque `<style>` + `<script>` al final de `index.html` ("Ojo para ver la contraseña") que envuelve cualquier `input[type=password]` en `.ojo-caja` y le pone `.ojo-btn`; si se cambia, cambiarlo igual en las 4 apps.

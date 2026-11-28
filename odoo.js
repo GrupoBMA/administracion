@@ -77,7 +77,15 @@
   var SIL = {
     utv: CALCO('utv', 6, 4.05) + RUEDA(13.1, 7) + RUEDA(50.97, 7),
     atv: CALCO('atv', 4.5, 3.63) + RUEDA(13.64, 8.85) + RUEDA(50.44, 8.85),
-    motocarro: CALCO('motocarro', 3.5, 4.2) + RUEDA(19.84, 4.6) + RUEDA(55.93, 4.6),
+    // Sin cabina (pedido del usuario, 28-nov-2026: "literalmente solo quitarle la parte de la cabina"): el mismo calco,
+    // tapando con el color del fondo el techo y el poste de atrás. Al frente, un carenado deportivo con el faro (todo relleno)
+    // y el manubrio detrás con el puño hacia atrás, de una foto de referencia del usuario; sin espejo.
+    motocarro: CALCO('motocarro', 3.5, 4.2) +
+      '<path class="h" d="M32.6 3.6H50.4V12.4H46.9L47.6 16.3 47.7 21.4H36.2V25.6H32.6Z"/>' +
+      '<path d="M48.4 17.4L50.2 11.2C50.4 10.6 51 10.4 51.6 10.7L54 12.2C55.2 13 56 14.4 56.2 15.8L56.4 17.6Z"/>' +
+      TRAZO('M50.2 12.6L45.8 12', 1.5) +
+      '<rect x="42.8" y="11" width="3.8" height="2" rx="1" transform="rotate(8 44.7 12)"/>' +
+      RUEDA(19.84, 4.6) + RUEDA(55.93, 4.6),
     // el ejemplo era de líneas: se calcó relleno; la línea blanca separa el asiento del chasis
     gokart: CALCO('gokart', 3, 11.9) + LINEA('M13 27.3H44', 1) + RUEDA(8.52, 5.2) + RUEDA(48.22, 5.2),
     mototaxi:
